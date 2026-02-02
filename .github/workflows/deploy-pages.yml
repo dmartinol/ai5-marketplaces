@@ -1,4 +1,4 @@
-name: Deploy Documentation to GitHub Pages
+name: Deploy GitHub Pages
 
 on:
   push:
@@ -11,14 +11,13 @@ on:
       - 'rh-virt/**'
       - 'scripts/**'
       - 'docs/**'
+      - '.github/workflows/deploy-pages.yml'
 
-# Sets permissions for GitHub Pages deployment
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -26,28 +25,24 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Python dependencies
-        run: |
-          pip install pyyaml
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
-      - name: Generate documentation data
+      - name: Generate documentation
         run: |
-          python scripts/build_website.py
+          source $HOME/.cargo/env
+          make generate
 
-      - name: Setup GitHub Pages
+      - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - name: Upload artifact
