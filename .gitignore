@@ -45,6 +45,7 @@ wheels/
 .installed.cfg
 *.egg
 .pytest_cache/
+.venv/
 .coverage
 htmlcov/
 
@@ -109,3 +110,6 @@ config.local.*
 *~
 *.backup
 *.old
+
+# Generated Documentation
+docs/data.json

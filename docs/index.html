@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ai5-marketplaces - Red Hat Agentic Packs</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>ai5-marketplaces</h1>
+        <p class="subtitle">Red Hat Agentic Packs for Claude Code and AI Marketplaces</p>
+        <div class="search-container">
+            <input type="search" id="searchInput" placeholder="Search packs, skills, agents, MCP servers...">
+        </div>
+    </header>
+
+    <main>
+        <!-- Section 1: Agentic Packs -->
+        <section id="packs-section">
+            <h2 onclick="toggleSection('packs')">
+                <span class="arrow">▼</span> Agentic Packs <span id="packs-count" class="count"></span>
+            </h2>
+            <div id="packs-grid" class="grid"></div>
+        </section>
+
+        <!-- Section 2: MCP Servers -->
+        <section id="mcp-section">
+            <h2 onclick="toggleSection('mcp')">
+                <span class="arrow">▼</span> MCP Servers <span id="mcp-count" class="count"></span>
+            </h2>
+            <div id="mcp-grid" class="grid"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Generated from <a href="https://github.com/dmartinol/ai5-marketplaces" target="_blank">ai5-marketplaces</a> repository</p>
+    </footer>
+
+    <!-- Modal for Pack Details -->
+    <div id="pack-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="pack-details"></div>
+        </div>
+    </div>
+
+    <!-- Modal for MCP Server Details -->
+    <div id="mcp-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="mcp-details"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
