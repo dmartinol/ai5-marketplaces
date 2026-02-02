@@ -1,1 +1,1 @@
-API_KEY="sk-proj-abc123def456ghi789jkl012mno345pqr678stu901"
+API_KEY="sk-proj-test123"
