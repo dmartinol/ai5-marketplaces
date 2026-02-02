@@ -1,0 +1,68 @@
+# Gitleaks configuration for ai5-marketplaces
+# Version: 8.18+
+# Documentation: https://github.com/gitleaks/gitleaks
+
+title = "ai5-marketplaces Secret Detection"
+
+[extend]
+# Use gitleaks default rules as base
+useDefault = true
+
+# Custom rules for project-specific patterns
+[[rules]]
+id = "mcp-hardcoded-credentials"
+description = "Hardcoded credentials in .mcp.json files (must use ${ENV_VAR} pattern)"
+regex = '''["'](?:LIGHTSPEED_CLIENT_ID|LIGHTSPEED_CLIENT_SECRET|API_KEY|SECRET|TOKEN|PASSWORD)["']\s*:\s*["'](?!\$\{)[^"']{8,}["']'''
+path = '''\.mcp\.json$'''
+tags = ["mcp", "credentials"]
+
+[[rules]]
+id = "openai-api-key-project"
+description = "OpenAI Project API Key"
+regex = '''sk-proj-[a-zA-Z0-9_-]{40,}'''
+tags = ["api-key", "openai"]
+
+[[rules]]
+id = "database-url-with-password"
+description = "Database connection string with embedded password"
+regex = '''(postgres|mysql|mongodb|redis)://[^:]+:[^@\s]{3,}@'''
+tags = ["database", "credentials"]
+
+# Allowlist (paths to exclude from scanning)
+[allowlist]
+description = "Allowlisted files and patterns"
+
+# Exclude test fixtures and example files
+paths = [
+    '''(^|/)examples/''',
+    '''(^|/)tests?/fixtures/''',
+    '''(^|/)docs/examples/''',
+    '''\.md$''',  # Documentation files
+]
+
+# Allowlist specific patterns that are false positives
+regexes = [
+    # Environment variable references
+    '''\$\{[A-Z_]+\}''',
+    '''\$[A-Z_]+''',
+    '''process\.env\.[A-Z_]+''',
+    '''os\.environ\[''',
+
+    # Example/dummy markers
+    '''(example|sample|dummy|placeholder|not.?real|test)''',
+
+    # Masked values
+    '''(\*\*\*|xxx|REDACTED)''',
+]
+
+# Stopwords - if these appear near a secret, it's likely a false positive
+stopwords = [
+    "example",
+    "sample",
+    "test",
+    "dummy",
+    "placeholder",
+    "fake",
+    "mock",
+    "not-real",
+]
