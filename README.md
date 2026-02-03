@@ -107,3 +107,159 @@ gitleaks protect --staged
 
 See [SECURITY.md](SECURITY.md) for details.
 
+## Adding a New MCP Server
+
+To add a new MCP server to an agentic pack and display it on the documentation site:
+
+### Step 1: Add MCP Configuration to Pack
+
+Add the server configuration to `<pack>/.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "your-server-name": {
+      "command": "podman|docker|npx",
+      "args": ["run", "--rm", "-i", "..."],
+      "env": {
+        "VAR_NAME": "${VAR_NAME}"  // Always use env var references
+      },
+      "description": "Brief description of the MCP server",
+      "security": {
+        "isolation": "container",
+        "network": "local",
+        "credentials": "env-only|none"
+      }
+    }
+  }
+}
+```
+
+**Security Requirements:**
+- ✅ Always use `${ENV_VAR}` references for credentials
+- ❌ Never hardcode API keys, tokens, or secrets
+- ✅ Set appropriate security isolation level
+
+### Step 2: Add Custom Metadata (Optional)
+
+To display repository links and tool descriptions on the documentation site, add an entry to `docs/mcp.json`:
+
+```json
+{
+  "your-server-name": {
+    "repository": "https://github.com/org/repo",
+    "tools": [
+      {
+        "name": "tool_name",
+        "description": "What this tool does and when to use it"
+      }
+    ]
+  }
+}
+```
+
+**Fields:**
+- `repository`: GitHub repository URL (appears as README badge on server card)
+- `tools`: Array of tool objects with name and description (displayed in server details modal)
+
+### Step 3: Generate Documentation
+
+Regenerate the documentation site data:
+
+```bash
+make generate
+```
+
+This will:
+1. Parse the `.mcp.json` file from your pack
+2. Merge it with custom data from `docs/mcp.json`
+3. Update `docs/data.json` with the new server
+
+### Step 4: Verify Locally
+
+Test the changes locally:
+
+```bash
+make serve
+```
+
+Visit http://localhost:8000 and verify:
+- Server appears in MCP Servers section
+- Server card shows correct information
+- README badge appears (if repository URL provided)
+- Tools count displays (if tools provided)
+- Details modal shows all configuration
+
+### Step 5: Commit and Deploy
+
+```bash
+git add <pack>/.mcp.json docs/mcp.json docs/data.json
+git commit -m "feat: add <server-name> MCP server to <pack>"
+git push
+```
+
+The documentation site will automatically update via GitHub Actions.
+
+### Example: Adding Red Hat Insights MCP Server
+
+**File: `rh-sre/.mcp.json`**
+```json
+{
+  "mcpServers": {
+    "insights-mcp": {
+      "command": "podman",
+      "args": ["run", "--rm", "-i",
+               "--env", "LIGHTSPEED_CLIENT_ID",
+               "--env", "LIGHTSPEED_CLIENT_SECRET",
+               "quay.io/redhat-services-prod/insights-mcp:latest"],
+      "env": {
+        "LIGHTSPEED_CLIENT_ID": "${LIGHTSPEED_CLIENT_ID}",
+        "LIGHTSPEED_CLIENT_SECRET": "${LIGHTSPEED_CLIENT_SECRET}"
+      },
+      "description": "Red Hat Insights MCP server for CVE data and remediation",
+      "security": {
+        "isolation": "container",
+        "network": "local",
+        "credentials": "env-only"
+      }
+    }
+  }
+}
+```
+
+**File: `docs/mcp.json`**
+```json
+{
+  "insights-mcp": {
+    "repository": "https://github.com/RedHatInsights/insights-mcp",
+    "tools": [
+      {
+        "name": "vulnerability__get_cves",
+        "description": "Get list of CVEs affecting the account"
+      },
+      {
+        "name": "vulnerability__get_cve",
+        "description": "Get details about specific CVE"
+      }
+    ]
+  }
+}
+```
+
+### Troubleshooting
+
+**Server not appearing:**
+- Run `make validate` to check for JSON syntax errors
+- Verify `.mcp.json` file is in the pack directory
+- Check that pack directory is listed in `scripts/generate_pack_data.py` PACK_DIRS
+
+**Tools not showing:**
+- Ensure `docs/mcp.json` has entry for your server
+- Verify tool objects have both `name` and `description` fields
+- Regenerate with `make generate`
+
+**Security errors:**
+- Check for hardcoded credentials with `gitleaks protect --staged`
+- Ensure all env values use `${VAR}` format
+- Review security isolation settings
+
