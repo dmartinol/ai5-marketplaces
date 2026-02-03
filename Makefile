@@ -29,7 +29,8 @@ check-uv:
 
 install: check-uv
 	@echo "Installing Python dependencies with uv..."
-	@uv venv @echo "Installing Python dependencies with uv..."
+	@uv venv
+	@echo "Installing Python dependencies with uv..."
 	@uv pip install -q -r scripts/requirements.txt
 	@echo "Dependencies installed in isolated environment!"
 
