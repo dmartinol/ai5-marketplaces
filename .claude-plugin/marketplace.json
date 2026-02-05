@@ -1,0 +1,25 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "redhat-agentic-collections",
+  "version": "1.0.0",
+  "description": "Validated Agentic Collections from Red Hat Ecosystem Engineering",
+  "owner": {
+    "name": "Red Hat Ecosystem Engineering",
+    "email": "eco-engineering@redhat.com"
+  },
+  "plugins": [
+    {
+      "name": "sre-agents",
+      "description": "Site Reliability Engineering Agentic Collection",
+      "version": "1.0.0",
+      "author": {
+        "name": "Red Hat Ecosystem Engineering",
+        "email": "eco-engineering@redhat.com"
+      },
+      "source": "./rh-sre",
+      "category": "sre",
+      "agents": "./agents/remediator.md",
+      "skills": "./skills"
+    }
+  ]
+}

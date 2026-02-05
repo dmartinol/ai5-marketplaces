@@ -33,10 +33,10 @@ def build_website():
     # Combine into final output
     output = {
         'repository': {
-            'name': 'ai5-marketplaces',
-            'owner': 'Red Hat',
+            'name': 'agentic-collections',
+            'owner': 'Red Hat Ecosystem Engineering',
             'description': 'Agentic packs for Red Hat platforms and products',
-            'url': 'https://github.com/dmartinol/ai5-marketplaces'
+            'url': 'https://github.com/RHEcosystemAppEng/agentic-collections'
         },
         'packs': pack_data,
         'mcp_servers': mcp_data,

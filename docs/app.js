@@ -366,7 +366,7 @@ function showPackDetails(packName) {
         const readmeButton = document.createElement('a');
         readmeButton.className = 'readme-button';
         readmeButton.textContent = 'README';
-        readmeButton.href = `https://github.com/dmartinol/ai5-marketplaces/tree/main/${pack.name}`;
+        readmeButton.href = `https://github.com/RHEcosystemAppEng/agentic-collections/tree/main/${pack.name}`;
         readmeButton.target = '_blank';
         meta.appendChild(readmeButton);
     }
@@ -402,7 +402,7 @@ function showPackDetails(packName) {
 
     const pre = document.createElement('pre');
     const code = document.createElement('code');
-    code.textContent = `git clone https://github.com/dmartinol/ai5-marketplaces\ncd ai5-marketplaces/${pack.name}`;
+    code.textContent = `git clone https://github.com/RHEcosystemAppEng/agentic-collections\ncd ai5-marketplaces/${pack.name}`;
     pre.appendChild(code);
     codeWrapper.appendChild(pre);
 
@@ -584,7 +584,7 @@ function showPackDetails(packName) {
         docsLink.style.paddingTop = '1rem';
         docsLink.style.borderTop = '1px solid var(--border)';
         const link = document.createElement('a');
-        link.href = `https://github.com/dmartinol/ai5-marketplaces/tree/main/${pack.name}/docs`;
+        link.href = `https://github.com/RHEcosystemAppEng/agentic-collections/tree/main/${pack.name}/docs`;
         link.target = '_blank';
         link.textContent = 'View full documentation on GitHub →';
         link.style.color = 'var(--primary)';

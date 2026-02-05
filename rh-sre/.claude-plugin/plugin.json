@@ -1,13 +1,13 @@
 {
-  "name": "SRE plugins",
-  "version": "0.1.0",
-  "description": "SRE plugins for Red Hat platforms and products",
+  "name": "sre-agents",
+  "version": "1.0.0",
+  "description": "Site Reliability Engineering Agentic Collection",
   "author": {
-    "name": "Red Hat",
-    "email": "dmartino@redhat.com"
+    "name": "Red Hat Ecosystem Engineering",
+    "email": "eco-engineering@redhat.com"
   },
-  "homepage": "https://github.com/dmartinol/ai5-marketplaces",
-  "repository": "https://github.com/dmartinol/ai5-marketplaces",
+  "homepage": "https://github.com/RHEcosystemAppEng/agentic-collections",
+  "repository": "https://github.com/RHEcosystemAppEng/agentic-collections",
   "license": "Apache-2.0",
   "keywords": ["sre", "red-hat", "platforms", "products", "automation"]
 }

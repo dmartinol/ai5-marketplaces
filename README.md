@@ -11,7 +11,7 @@ Agentic packs to automate interaction with Red Hat platforms and products for va
 
 ## Documentation Site
 
-View the interactive documentation at: **https://dmartinol.github.io/ai5-marketplaces/**
+View the interactive documentation at: **https://rhecosystemappeng.github.io/agentic-collections**
 
 The site provides:
 - **Agentic Packs**: Browse all available packs, skills, and agents with detailed descriptions
