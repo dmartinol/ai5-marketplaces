@@ -74,11 +74,11 @@
     },
     {
       "path": "insights/vulnerability-logic.md",
-      "title": "Red Hat Insights Vulnerability Assessment Logic",
+      "title": "Red Hat Lightspeed Vulnerability Assessment Logic",
       "category": "insights",
       "tags": ["insights", "vulnerability", "cve", "risk-assessment", "remediation"],
       "semantic_keywords": [
-        "Red Hat Insights",
+        "Red Hat Lightspeed",
         "vulnerability assessment",
         "CVE risk scoring",
         "vulnerable vs affected",
@@ -101,7 +101,7 @@
       ],
       "rhel_versions": ["rhel6", "rhel7", "rhel8", "rhel9"],
       "applies_to_systems": ["bare_metal", "vm", "kubernetes", "openshift"],
-      "content_summary": "Explains how Red Hat Insights assesses CVE vulnerabilities using vulnerable vs affected classification, Security Rules designation, Red Hat severity ratings, and remediation prioritization methodology. Includes priority decision matrix and integration guidance.",
+      "content_summary": "Explains how Red Hat Lightspeed assesses CVE vulnerabilities using vulnerable vs affected classification, Security Rules designation, Red Hat severity ratings, and remediation prioritization methodology. Includes priority decision matrix and integration guidance.",
       "related_docs": [
         "references/cvss-scoring.md",
         "ansible/cve-remediation-templates.md",
@@ -205,7 +205,7 @@
       ],
       "workflow_order": ["vulnerability-logic", "cvss-scoring"],
       "estimated_tokens": 1900,
-      "description": "Analyze CVE impact without creating remediation, including Red Hat Insights assessment and CVSS interpretation"
+      "description": "Analyze CVE impact without creating remediation, including Red Hat Lightspeed assessment and CVSS interpretation"
     }
   },
   "inference_hints": {

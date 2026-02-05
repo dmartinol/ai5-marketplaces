@@ -1,11 +1,11 @@
 ---
 name: fleet-inventory
 description: |
-  Query and display Red Hat Insights managed system inventory. Use this skill for information-gathering requests about the fleet, registered systems, or inventory queries. This skill focuses on discovery and listing only - for remediation actions, transition to the remediator agent.
+  Query and display Red Hat Lightspeed managed system inventory. Use this skill for information-gathering requests about the fleet, registered systems, or inventory queries. This skill focuses on discovery and listing only - for remediation actions, transition to the remediator agent.
 
   **When to use this skill**:
   - "Show the managed fleet"
-  - "List all systems registered in Insights"
+  - "List all systems registered in Lightspeed"
   - "What systems are affected by CVE-X?"
   - "How many RHEL 8 systems do we have?"
   - "Show me production systems"
@@ -15,17 +15,39 @@ description: |
   - "Create a playbook for..."
   - "Patch system Y"
 
-  This skill orchestrates MCP tools from insights-mcp to provide comprehensive fleet visibility and system inventory management.
+  This skill orchestrates MCP tools from lightspeed-mcp to provide comprehensive fleet visibility and system inventory management.
+model: inherit
+color: blue
 ---
 
 # Fleet Inventory Skill
 
-This skill queries Red Hat Insights to retrieve and display information about managed systems, registered hosts, and fleet inventory.
+This skill queries Red Hat Lightspeed to retrieve and display information about managed systems, registered hosts, and fleet inventory.
+
+## Prerequisites
+
+**Required MCP Servers**: `lightspeed-mcp` ([setup guide](https://console.redhat.com/))
+
+**Required MCP Tools**:
+- `get_host_details` (from lightspeed-mcp) - Retrieve system inventory
+- `get_cve_systems` (from lightspeed-mcp) - Find CVE-affected systems
+
+**Required Environment Variables**:
+- `LIGHTSPEED_CLIENT_ID` - Red Hat Lightspeed service account client ID
+- `LIGHTSPEED_CLIENT_SECRET` - Red Hat Lightspeed service account secret
+
+### Prerequisite Validation
+
+**CRITICAL**: Before executing any operations, invoke the [mcp-lightspeed-validator](../mcp-lightspeed-validator/SKILL.md) skill to verify MCP server availability.
+
+See **Step 0** in the Workflow section below for implementation details.
+
+**Validation freshness**: Can skip if already validated in this session. See [Validation Freshness Policy](../mcp-lightspeed-validator/SKILL.md#validation-freshness-policy).
 
 ## When to Use This Skill
 
 **Use this skill directly when you need**:
-- List all systems registered in Red Hat Insights
+- List all systems registered in Red Hat Lightspeed
 - Show systems affected by specific CVEs
 - Display system details (OS version, tags, last check-in)
 - Filter systems by environment, RHEL version, or tags
@@ -42,17 +64,84 @@ This skill queries Red Hat Insights to retrieve and display information about ma
 
 ## Workflow
 
-### 1. Retrieve System Inventory
+### Step 0: Validate Lightspeed MCP Prerequisites
 
-**MCP Tool**: `get_host_details` (from insights-mcp)
+**Action**: Invoke the [mcp-lightspeed-validator](../mcp-lightspeed-validator/SKILL.md) skill
 
-Query Insights for system information:
+**Note**: Can skip if validation was performed earlier in this session and succeeded. See [Validation Freshness Policy](../mcp-lightspeed-validator/SKILL.md#validation-freshness-policy).
 
+**How to invoke**:
 ```
-Input: Optional filters (system_id, hostname pattern, tags)
-Tool: get_host_details()
+Use the Skill tool:
+  skill: "mcp-lightspeed-validator"
+```
 
-Expected Response:
+**Handle validation result**:
+- **If validation PASSED**: Continue to Step 1
+- **If validation PARTIAL** (connectivity test unavailable):
+  - Warn user: "Configuration appears correct but connectivity could not be tested"
+  - Ask: "Do you want to proceed? (yes/no)"
+  - If yes: Continue to Step 1
+  - If no: Stop execution
+- **If validation FAILED**:
+  - The validator provides error details and setup instructions
+  - Wait for user decision (setup/skip/abort)
+  - If user chooses "skip": Attempt Step 1 anyway (may fail)
+  - If user chooses "setup" or "abort": Stop execution
+
+**Example**:
+```
+Before retrieving fleet inventory, I'll validate the Lightspeed MCP server configuration.
+
+[Invoke mcp-lightspeed-validator skill]
+
+✓ Lightspeed MCP validation successful.
+Proceeding with fleet inventory query...
+```
+
+### Step 1: Retrieve System Inventory
+
+I consulted [insights-api.md](../../docs/insights/insights-api.md) to understand the `get_host_details` response format and pagination handling.
+
+**MCP Tool**: `get_host_details` (from lightspeed-mcp)
+
+**Purpose**: Query Lightspeed for comprehensive system information
+
+**Parameters** (based on user query):
+
+```python
+# For "Show the managed fleet" (no filters)
+get_host_details()
+
+# For "Show system abc-123" (specific system)
+get_host_details(
+    system_id="abc-123"
+)
+
+# For "Show web servers" (hostname pattern)
+get_host_details(
+    hostname_pattern="web-*"
+)
+
+# For "Show production systems" (tag filter)
+get_host_details(
+    tags=["production"]
+)
+
+# For "Show RHEL 8 systems" (version filter)
+get_host_details(
+    operating_system__version__startswith="8"
+)
+
+# Multiple filters combined
+get_host_details(
+    tags=["production", "web-tier"],
+    operating_system__version__startswith="8"
+)
+```
+
+**Expected Response**:
+```json
 {
   "systems": [
     {
@@ -64,68 +153,88 @@ Expected Response:
       "tags": ["production", "web-tier"],
       "stale": false,
       "satellite_managed": false
-    },
-    ...
+    }
   ],
   "total": 42,
   "count": 10
 }
-
-Verification:
-✓ Systems list returned with metadata
-✓ Total count matches expectation
-✓ System details include RHEL version, tags, status
 ```
+
+**Verification Checklist**:
+- ✓ Systems list returned with metadata
+- ✓ Total count matches expectation
+- ✓ System details include RHEL version, tags, status
+- ✓ No authentication errors (401/403)
 
 **Key Fields to Extract**:
-- `id`: Unique system identifier (use for remediation)
+- `id`: Unique system identifier (use for remediation workflows)
 - `display_name` / `fqdn`: Human-readable hostname
-- `rhel_version`: OS version (important for remediation planning)
+- `rhel_version`: OS version (critical for remediation compatibility)
 - `tags`: Environment labels (production, staging, dev)
-- `stale`: Whether system recently checked in
-- `last_seen`: Last Insights client run
+- `stale`: Whether system recently checked in (< 7 days)
+- `last_seen`: Last Lightspeed client run timestamp
 
-### 2. Filter and Organize Systems
+### Step 2: Filter and Organize Systems
 
-Apply user-requested filters:
+Apply user-requested filters and grouping:
 
-```
-Filtering Examples:
+**Filtering Examples**:
 
-By RHEL Version:
-→ systems.filter(rhel_version.startswith("8"))
-→ Result: All RHEL 8.x systems
+```python
+# By RHEL Version
+systems_rhel8 = [s for s in systems if s['rhel_version'].startswith("8")]
+# Result: All RHEL 8.x systems
 
-By Environment Tag:
-→ systems.filter("production" in tags)
-→ Result: Production systems only
+# By Environment Tag
+production_systems = [s for s in systems if "production" in s.get('tags', [])]
+# Result: Production systems only
 
-By Status:
-→ systems.filter(stale == false)
-→ Result: Active systems (recently checked in)
+# By Status (active vs stale)
+active_systems = [s for s in systems if not s.get('stale', False)]
+# Result: Active systems (checked in recently)
 
-By Hostname Pattern:
-→ systems.filter(fqdn.contains("web-server"))
-→ Result: Web server tier systems
+# By Hostname Pattern
+web_servers = [s for s in systems if 'web-server' in s.get('fqdn', '')]
+# Result: Web tier systems
 ```
 
 **Sorting Options**:
-- By last_seen (most recent first)
-- By rhel_version (group by OS)
-- By display_name (alphabetical)
-- By tag (environment grouping)
+```python
+# By last check-in (most recent first)
+sorted(systems, key=lambda s: s['last_seen'], reverse=True)
 
-### 3. Query CVE-Affected Systems
+# By RHEL version (group by OS)
+sorted(systems, key=lambda s: s['rhel_version'])
 
-**MCP Tool**: `get_cve_systems` (from insights-mcp)
+# By display name (alphabetical)
+sorted(systems, key=lambda s: s['display_name'])
 
-Find systems affected by specific CVEs:
-
+# By environment tag
+sorted(systems, key=lambda s: s.get('tags', [''])[0])
 ```
-Input: CVE ID (e.g., "CVE-2024-1234")
-Tool: get_cve_systems(cve_id="CVE-2024-1234")
 
-Expected Response:
+### Step 3: Query CVE-Affected Systems
+
+**MCP Tool**: `get_cve_systems` (from lightspeed-mcp)
+
+**Purpose**: Find systems affected by specific CVEs
+
+**Parameters** (exact specification):
+
+```python
+# For "What systems are affected by CVE-2024-1234?"
+get_cve_systems(
+    cve_id="CVE-2024-1234"  # Exact CVE ID from user query
+)
+
+# The cve_id parameter MUST:
+# - Match format: CVE-YYYY-NNNNN
+# - Be uppercase: CVE-2024-1234 (not cve-2024-1234)
+# - Include full ID: CVE-2024-1234 (not 2024-1234)
+```
+
+**Expected Response**:
+```json
 {
   "cve_id": "CVE-2024-1234",
   "affected_systems": [
@@ -146,66 +255,66 @@ Expected Response:
   "total_remediated": 3,
   "total_vulnerable": 12
 }
-
-Verification:
-✓ CVE ID matches request
-✓ System list includes remediation status
-✓ Counts accurate (affected, remediated, still vulnerable)
 ```
+
+**Verification Checklist**:
+- ✓ CVE ID matches request exactly
+- ✓ System list includes remediation status for each
+- ✓ Counts are accurate (affected, remediated, still vulnerable)
+- ✓ `remediation_available` flag is present
 
 **Status Interpretation**:
 ```
-Status: Vulnerable
+Status: "Vulnerable"
 → CVE affects this system, patch not applied
-→ Action: Suggest remediation
+→ Action: Suggest remediation via remediator agent
 
-Status: Patched
+Status: "Patched"
 → CVE previously affected, now remediated
-→ Action: No action needed
+→ Action: No action needed, informational only
 
-Status: Not Affected
+Status: "Not Affected"
 → System not vulnerable to this CVE
-→ Action: Informational only
+→ Action: Exclude from affected count
 ```
 
-### 4. Generate Fleet Summary
+### Step 4: Generate Fleet Summary
 
 Create organized output based on query results:
 
+**Summary Template**:
 ```markdown
 # Fleet Inventory Summary
 
+Retrieved from Red Hat Lightspeed on YYYY-MM-DDTHH:MM:SSZ
+
 ## Overview
-**Total Systems**: 42
-**Active Systems**: 38 (last seen < 24 hours)
-**Stale Systems**: 4 (last seen > 7 days)
+**Total Systems**: <total_count>
+**Active Systems**: <active_count> (last seen < 24 hours)
+**Stale Systems**: <stale_count> (last seen > 7 days)
 
 ## By RHEL Version
-- RHEL 9.x: 18 systems (43%)
-- RHEL 8.x: 20 systems (48%)
-- RHEL 7.x: 4 systems (9%)
+- RHEL 9.x: <count> systems (<percentage>%)
+- RHEL 8.x: <count> systems (<percentage>%)
+- RHEL 7.x: <count> systems (<percentage>%)
 
 ## By Environment (Tags)
-- Production: 25 systems
-- Staging: 10 systems
-- Development: 7 systems
+- Production: <count> systems
+- Staging: <count> systems
+- Development: <count> systems
 
 ## System Details
 
 | Display Name | RHEL Version | Environment | Last Seen | Status |
 |--------------|--------------|-------------|-----------|--------|
-| web-server-01.example.com | 8.9 | production | 2024-01-20T10:30:00Z | Active |
-| web-server-02.example.com | 8.9 | production | 2024-01-20T09:45:00Z | Active |
-| db-server-01.example.com | 9.3 | production | 2024-01-20T10:15:00Z | Active |
-| ... | ... | ... | ... | ... |
+| [system details rows...]
 
 ## Stale Systems (Attention Required)
 ⚠️ The following systems have not checked in recently:
-- backup-server-01.example.com (last seen: 8 days ago)
-- test-server-05.example.com (last seen: 12 days ago)
+- [stale system list...]
 ```
 
-### 5. Offer Remediation Transition
+### Step 5: Offer Remediation Transition
 
 When appropriate, suggest transitioning to the remediator agent:
 
@@ -213,7 +322,7 @@ When appropriate, suggest transitioning to the remediator agent:
 ## Next Steps
 
 **For CVE Remediation**:
-If you need to remediate vulnerabilities on any of these systems, I can help with that using the remediator agent:
+If you need to remediate vulnerabilities on any of these systems, I can help using the remediator agent:
 
 Examples:
 - "Remediate CVE-2024-1234 on web-server-01"
@@ -221,10 +330,71 @@ Examples:
 - "Batch remediate critical CVEs on staging environment"
 
 **For System Investigation**:
-- "Show CVEs affecting web-server-01"
-- "Analyze risk for production systems"
-- "List critical vulnerabilities across the fleet"
+- "Show CVEs affecting web-server-01" (use cve-impact skill)
+- "Analyze risk for production systems" (use cve-impact skill)
+- "List critical vulnerabilities across the fleet" (use cve-impact skill)
 ```
+
+## Dependencies
+
+### Required MCP Servers
+- `lightspeed-mcp` - Red Hat Lightspeed platform access for system inventory and CVE data
+
+### Required MCP Tools
+- `get_host_details` (from lightspeed-mcp) - Retrieve all registered systems with metadata
+  - Parameters: Optional filters (system_id, hostname_pattern, tags, operating_system)
+  - Returns: List of systems with id, display_name, fqdn, rhel_version, tags, stale status
+
+- `get_cve_systems` (from lightspeed-mcp) - Find systems affected by specific CVEs
+  - Parameters: cve_id (string, format: CVE-YYYY-NNNNN)
+  - Returns: List of affected systems with vulnerability and remediation status
+
+### Related Skills
+- `mcp-lightspeed-validator` - **PREREQUISITE** - Validates Lightspeed MCP server configuration and connectivity
+  - Use before: ALL fleet-inventory operations (Step 0 in workflow)
+  - Purpose: Ensures MCP server is available before attempting tool calls
+  - Prevents errors from missing configuration or credentials
+
+- `cve-impact` - Analyze CVE severity and risk after identifying affected systems
+  - Use after: "What systems are affected by CVE-X?" → "What's the risk of CVE-X?"
+
+- `cve-validation` - Validate CVE IDs before querying affected systems
+  - Use before: If CVE ID format is unclear, validate first
+
+- `system-context` - Get detailed system configuration for specific hosts
+  - Use after: Fleet discovery identifies systems needing deeper investigation
+
+- `remediator` (agent) - Transition to remediation workflows after discovery
+  - Use after: "Show affected systems" → "Remediate those systems"
+
+### Reference Documentation
+- [insights-api.md](../../docs/insights/insights-api.md) - Red Hat Lightspeed API patterns and response formats
+- [fleet-management.md](../../docs/insights/fleet-management.md) - System inventory best practices and filtering strategies
+
+### Skill Orchestration Pattern
+
+**Information-First Workflow**:
+```
+User Query: "Show the managed fleet"
+    ↓
+fleet-inventory skill (discovery)
+    ↓
+Systems identified: 42 total, 15 affected by CVE-2024-1234
+    ↓
+User: "What's the risk of CVE-2024-1234?"
+    ↓
+cve-impact skill (analysis)
+    ↓
+CVSS 8.1, Critical severity, affects httpd package
+    ↓
+User: "Remediate CVE-2024-1234 on all production systems"
+    ↓
+remediator agent (action)
+    ↓
+Playbook generated and executed
+```
+
+**Key Principle**: Always start with discovery before taking remediation actions. This ensures informed decisions based on actual fleet state.
 
 ## Output Templates
 
@@ -236,7 +406,9 @@ Examples:
 ```markdown
 # Managed Fleet Inventory
 
-Retrieved from Red Hat Insights on 2024-01-20T10:30:00Z
+I consulted [fleet-management.md](../../docs/insights/fleet-management.md) to structure this inventory report.
+
+Retrieved from Red Hat Lightspeed on 2024-01-20T10:30:00Z
 
 ## Fleet Overview
 - **Total Registered Systems**: 42
@@ -347,43 +519,12 @@ Filtered by tag: "production"
 
 ## Stale System Alert ⚠️
 - backup-server-01.example.com (last seen: 8 days ago)
-  - Action: Investigate Insights client connectivity
+  - Action: Investigate Lightspeed client connectivity
 
 ## Next Steps
 - "Show CVEs affecting production systems"
 - "List critical vulnerabilities in production"
 - "Remediate CVE-X on production web tier"
-```
-
-### Template 4: RHEL Version View
-
-**User Request**: "How many RHEL 8 systems do we have?"
-
-**Skill Response**:
-```markdown
-# RHEL 8.x Systems Inventory
-
-## RHEL 8 Version Breakdown
-- **Total RHEL 8.x Systems**: 20 (48% of fleet)
-- **RHEL 8.9**: 15 systems (latest)
-- **RHEL 8.8**: 5 systems (upgrade recommended)
-
-## RHEL 8.9 Systems (Latest)
-[Table with 15 systems]
-
-## RHEL 8.8 Systems (Upgrade Available)
-⚠️ These systems are not on the latest RHEL 8.x minor version:
-- legacy-app-01.example.com (RHEL 8.8)
-- legacy-app-02.example.com (RHEL 8.8)
-- test-server-03.example.com (RHEL 8.8)
-- ...
-
-**Recommendation**: Consider upgrading RHEL 8.8 systems to RHEL 8.9 for latest security patches.
-
-## Next Steps
-- "Show CVEs affecting RHEL 8 systems"
-- "Create upgrade plan for RHEL 8.8 → 8.9"
-- "Remediate critical CVEs on RHEL 8 fleet"
 ```
 
 ## Examples
@@ -392,46 +533,45 @@ Filtered by tag: "production"
 
 **User Request**: "Show the managed fleet"
 
-**Skill Response**:
-1. Call `get_host_details()` without filters → retrieve all systems
-2. Group by RHEL version, environment tags
-3. Calculate totals and percentages
-4. Sort by last_seen (most recent first)
-5. Generate Template 1 output
-6. Offer next step options (CVE analysis, remediation)
+**Skill Execution**:
+1. **Invoke mcp-lightspeed-validator skill** (Step 0)
+   - Validation result: ✓ PASSED
+   - Message: "Lightspeed MCP validation successful. Proceeding with fleet inventory query..."
+2. Call `get_host_details()` with no filters → retrieve all systems
+3. I consulted [fleet-management.md](../../docs/insights/fleet-management.md) for grouping strategy
+4. Group by RHEL version, environment tags
+5. Calculate totals and percentages
+6. Sort by last_seen (most recent first)
+7. Generate Template 1 output
+8. Offer next step options (CVE analysis, remediation)
 
 ### Example 2: CVE Impact Query
 
 **User Request**: "What systems are affected by CVE-2024-1234?"
 
-**Skill Response**:
-1. Call `get_cve_systems(cve_id="CVE-2024-1234")`
-2. Separate vulnerable vs. patched systems
-3. Extract affected package information
-4. Generate Template 2 output
-5. Suggest remediation agent for next steps
+**Skill Execution**:
+1. **Invoke mcp-lightspeed-validator skill** (Step 0)
+   - Validation result: ✓ PASSED
+2. Call `get_cve_systems(cve_id="CVE-2024-1234")`
+3. Separate vulnerable vs. patched systems
+4. Extract affected package information
+5. Generate Template 2 output
+6. Suggest remediation agent for next steps
 
 ### Example 3: Environment Filter
 
 **User Request**: "Show me staging systems"
 
-**Skill Response**:
-1. Call `get_host_details()` → retrieve all systems
-2. Filter by tag: "staging" in system.tags
-3. Group by tier/function (inferred from hostname)
-4. Generate Template 3 output
-5. Suggest CVE analysis or remediation options
-
-### Example 4: Version-Specific Query
-
-**User Request**: "List all RHEL 9 systems"
-
-**Skill Response**:
-1. Call `get_host_details()` → retrieve all systems
-2. Filter: rhel_version starts with "9"
-3. Group by minor version (9.3, 9.2, etc.)
-4. Generate Template 4 output
-5. Suggest upgrade or remediation workflows
+**Skill Execution**:
+1. **Invoke mcp-lightspeed-validator skill** (Step 0)
+   - Validation result: ⚠ PARTIAL (connectivity test unavailable)
+   - Ask user: "Configuration appears correct but connectivity could not be tested. Proceed? (yes/no)"
+   - User response: "yes"
+2. Call `get_host_details()` → retrieve all systems
+3. Filter by tag: "staging" in system.tags
+4. Group by tier/function (inferred from hostname patterns)
+5. Generate Template 3 output
+6. Suggest CVE analysis or remediation options
 
 ## Error Handling
 
@@ -442,32 +582,55 @@ Fleet Inventory Query: No Results
 Query: [user's filter criteria]
 Result: No systems match the specified criteria
 
-Possible reasons:
-1. No systems registered in Red Hat Insights
+❓ Possible reasons:
+1. No systems registered in Red Hat Lightspeed
 2. Filter criteria too restrictive
 3. Systems not tagged with specified environment
 
-Troubleshooting:
-- Verify systems are registered: Check Red Hat Insights console
+🔧 Troubleshooting:
+- Verify systems are registered: Visit https://console.redhat.com/insights/inventory
 - Try broader filters: Remove environment/version constraints
-- Check tag spelling: Ensure tag names match exactly
+- Check tag spelling: Ensure tag names match exactly (case-sensitive)
+
+💡 Suggested actions:
+- "Show the managed fleet" (no filters)
+- "List all system tags"
+- "Show system registration status"
 ```
 
-**Insights API Error**:
+**Lightspeed API Error**:
 ```
-Fleet Inventory Query: API Error
+❌ Fleet Inventory Query: API Error
 
-Error: Unable to retrieve system inventory from Red Hat Insights
+Error: Unable to retrieve system inventory from Red Hat Lightspeed
 
-Possible causes:
-1. insights-mcp server not running
-2. Authentication failure (check LIGHTSPEED credentials)
+📋 Possible causes:
+1. lightspeed-mcp server not running
+2. Authentication failure (invalid credentials)
 3. Network connectivity issues
+4. Red Hat Lightspeed service outage
 
-Troubleshooting:
-1. Verify insights-mcp server is running: Check .mcp.json configuration
-2. Check credentials: echo $LIGHTSPEED_CLIENT_ID
-3. Test manually: podman run insights-mcp-server
+🔧 Troubleshooting:
+1. Verify lightspeed-mcp server configuration:
+   - Check .mcp.json has lightspeed-mcp entry
+   - Verify container is running: podman ps | grep insights
+
+2. Check credentials:
+   - echo $LIGHTSPEED_CLIENT_ID
+   - echo $LIGHTSPEED_CLIENT_SECRET
+   - Verify credentials at https://console.redhat.com/settings/service-accounts
+
+3. Test connection manually:
+   podman run --rm -i --env LIGHTSPEED_CLIENT_ID --env LIGHTSPEED_CLIENT_SECRET \
+     quay.io/redhat-services-prod/lightspeed-mcp:latest
+
+4. Check service status:
+   - Visit https://status.redhat.com/
+
+❓ How would you like to proceed?
+- "retry" - Try the query again
+- "setup" - Reconfigure lightspeed-mcp server
+- "abort" - Stop the workflow
 ```
 
 **Stale System Warning**:
@@ -478,51 +641,87 @@ The following systems have not checked in recently (> 7 days):
 - system-01.example.com (last seen: 8 days ago)
 - system-02.example.com (last seen: 12 days ago)
 
-Impact: Vulnerability data may be outdated for these systems
+📊 Impact: Vulnerability data may be outdated for these systems
 
-Recommended Actions:
-1. Verify Insights client is running: systemctl status insights-client
-2. Check network connectivity from these systems
-3. Review Insights client logs: /var/log/insights-client/insights-client.log
-4. Re-register if needed: insights-client --register
+🔧 Recommended Actions:
+1. Verify Lightspeed client is running:
+   ssh system-01.example.com "systemctl status insights-client"
+
+2. Check network connectivity from these systems:
+   ssh system-01.example.com "ping console.redhat.com"
+
+3. Review Lightspeed client logs:
+   ssh system-01.example.com "cat /var/log/insights-client/insights-client.log"
+
+4. Re-register if needed:
+   ssh system-01.example.com "insights-client --register"
+
+5. Force immediate check-in:
+   ssh system-01.example.com "insights-client --check-results"
+
+💡 Note: Stale systems are still included in inventory but may have outdated CVE data.
 ```
 
 ## Best Practices
 
-1. **Start broad, then filter** - Retrieve full inventory first, then apply filters
-2. **Group by meaningful categories** - Environment, RHEL version, tier/function
-3. **Highlight stale systems** - Warn users about systems with outdated data
-4. **Offer remediation transitions** - Always suggest next steps (use remediator agent)
-5. **Use clear formatting** - Tables for detailed lists, summaries for overviews
-6. **Include percentages** - Help users understand fleet composition
-7. **Show last check-in times** - Indicate data freshness
-8. **Link to CVE analysis** - Transition to cve-impact skill for vulnerability details
-
-## Tools Reference
-
-This skill primarily uses:
-- `get_host_details` (insights-mcp) - Retrieve system inventory
-- `get_cve_systems` (insights-mcp) - Find systems affected by specific CVEs
-
-All tools are provided by the insights-mcp MCP server configured in `.mcp.json`.
+1. **Start broad, then filter** - Retrieve full inventory first, then apply user-requested filters
+2. **Group by meaningful categories** - Environment, RHEL version, tier/function for clarity
+3. **Highlight stale systems** - Warn users about systems with potentially outdated vulnerability data
+4. **Offer remediation transitions** - Always suggest next steps using remediator agent
+5. **Use clear formatting** - Tables for detailed lists, summaries for high-level overviews
+6. **Include percentages** - Help users understand fleet composition at a glance
+7. **Show last check-in times** - Indicate data freshness and system health
+8. **Link to CVE analysis** - Transition smoothly to cve-impact skill for vulnerability details
+9. **Declare document consultations** - Always state "I consulted [file]" for transparency
+10. **Verify prerequisites first** - Never attempt MCP calls without checking server availability
 
 ## Integration with Other Skills
 
-- **cve-impact**: Transition to CVE analysis after identifying affected systems
-- **remediator agent**: Transition to remediation workflows after fleet discovery
-- **remediation-verifier**: Verify remediation status on specific systems
+**Skill Orchestration Workflows**:
 
-**Typical Workflow**:
-1. User: "Show the managed fleet" → **fleet-inventory skill**
-2. Response shows 42 systems, 15 have CVE-2024-1234
-3. User: "What's the risk of CVE-2024-1234?" → **cve-impact skill**
-4. Response shows CVSS 8.1, Critical severity
-5. User: "Remediate CVE-2024-1234 on all affected systems" → **remediator agent**
-6. Agent generates playbook, executes, verifies → **Complete workflow**
+**Workflow 1: Discovery → Analysis → Action**
+```
+User: "Show the managed fleet"
+  ↓
+fleet-inventory skill
+  ↓
+Response: 42 systems, 15 affected by CVE-2024-1234
+  ↓
+User: "What's the risk of CVE-2024-1234?"
+  ↓
+cve-impact skill (analyzes severity)
+  ↓
+Response: CVSS 8.1, Critical severity
+  ↓
+User: "Remediate CVE-2024-1234 on all affected systems"
+  ↓
+remediator agent (orchestrates remediation)
+  ↓
+Complete: Playbook generated and executed
+```
+
+**Workflow 2: Environment Focus**
+```
+User: "Show production systems"
+  ↓
+fleet-inventory skill (environment filter)
+  ↓
+Response: 25 production systems
+  ↓
+User: "List critical CVEs in production"
+  ↓
+cve-impact skill (production scope)
+  ↓
+Response: 3 critical CVEs
+  ↓
+User: "Create remediation plan"
+  ↓
+remediator agent (multi-CVE workflow)
+```
 
 **Information-First Principle**:
 ```
-Always start with discovery:
+Always follow this sequence:
 1. What systems do we have? (fleet-inventory)
 2. What are they vulnerable to? (cve-impact)
 3. How do we fix it? (remediator agent)

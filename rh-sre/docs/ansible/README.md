@@ -45,6 +45,6 @@ This directory contains Ansible playbook patterns and best practices for CVE rem
 
 ## Quick Links
 
-- Red Hat Insights Remediations: https://docs.redhat.com/en/documentation/red_hat_insights/1-latest/html-single/red_hat_insights_remediations_guide/index
+- Red Hat Lightspeed Remediations: https://docs.redhat.com/en/documentation/red_hat_insights/1-latest/html-single/red_hat_insights_remediations_guide/index
 - Ansible Automation Platform docs: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.4
 - Source attribution: [../SOURCES.md](../SOURCES.md)

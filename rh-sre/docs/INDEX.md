@@ -4,7 +4,7 @@ category: meta
 sources:
   - title: Red Hat Product Documentation
     url: https://docs.redhat.com
-    sections: RHEL, OpenShift, Ansible Automation Platform, Red Hat Insights
+    sections: RHEL, OpenShift, Ansible Automation Platform, Red Hat Lightspeed
     date_accessed: 2026-01-20
 last_updated: 2026-01-20
 ---
@@ -26,7 +26,7 @@ This knowledge base provides comprehensive Red Hat-specific patterns for CVE rem
   - Reboot detection and handling
 
 ### Priority P1 (Extended Documentation)
-- **[Red Hat Insights Vulnerability Logic](insights/vulnerability-logic.md)** ✅
+- **[Red Hat Lightspeed Vulnerability Logic](insights/vulnerability-logic.md)** ✅
   - CVE risk assessment methodology
   - CVSS score interpretation
   - System inventory correlation
@@ -112,7 +112,7 @@ docs/
 │   ├── error-handling.md (P1 - planned)
 │   ├── idempotency.md (P2 - planned)
 │   └── aap-integration.md (P2 - planned)
-├── insights/                   # Red Hat Insights patterns
+├── insights/                   # Red Hat Lightspeed patterns
 │   ├── README.md ✅
 │   ├── vulnerability-logic.md (P1) ✅
 │   ├── remediation-workflow.md (P2 - planned)
@@ -276,7 +276,7 @@ See [SOURCES.md](SOURCES.md) for complete source attribution table including:
 - Official Red Hat Product Documentation URLs
 - Red Hat Customer Portal knowledge base articles
 - OpenShift official documentation
-- Red Hat Insights documentation
+- Red Hat Lightspeed documentation
 - Red Hat security advisories and bulletins
 
 **License**: Content derived from Red Hat documentation licensed under CC BY-SA 4.0 or similar. All credit to Red Hat, Inc.

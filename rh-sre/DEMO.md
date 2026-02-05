@@ -22,7 +22,7 @@ claude plugin install sre-agents
 This prompts clarify the SRE Role and request to output debug information to verify what agents, skills, tools
 and docs were evaluated to reply to the user request.
 ```
-You are an SRE responsible for maintaining the fleet of cloud devices monitored with Red Hat Insights/Lightspeed. 
+You are an SRE responsible for maintaining the fleet of cloud devices monitored with Red Hat Lightspeed/Lightspeed. 
 Whenever a request related to this topic comes to you, use the agent and skills from the remediation-agent plugin to complete the job.
 NEVER use the remediation-agent plugin tools directly, without first executing one of the skills.
  

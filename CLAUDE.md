@@ -57,48 +57,428 @@ Each pack follows this structure:
 
 **Key Pattern**: Agents orchestrate skills; skills encapsulate tools. Never call MCP tools directly - always go through skills.
 
+## Design Principles for Skills and Agents
+
+### 1. Document Consultation Transparency
+
+When a skill or agent consults documentation (from `docs/` or skill/agent files), it **MUST** explicitly declare this to the user:
+
+**Required Format**:
+```
+I consulted [filename.md](path/to/filename.md) to understand [specific topic].
+```
+
+**Examples**:
+- "I consulted [cvss-scoring.md](rh-sre/docs/references/cvss-scoring.md) to verify the CVSS severity mapping."
+- "I consulted [playbook-generator/SKILL.md](rh-sre/skills/playbook-generator/SKILL.md) to understand playbook generation parameters."
+
+**Rationale**: Provides transparency and helps users understand the AI's knowledge sources.
+
+### 2. Precise Parameter Specification
+
+Skills MUST specify **exact parameters** when instructing agents to use tools, ensuring first-attempt success.
+
+**❌ Bad Example**:
+```
+Use get_cve tool with the CVE ID
+```
+
+**✅ Good Example**:
+```
+Use get_cve tool with:
+- cve_id: "CVE-2024-1234" (exact string from user query)
+- include_details: true (to get CVSS scores)
+```
+
+**Rationale**: Reduces trial-and-error cycles and provides deterministic guidance.
+
+### 3. Skill Precedence and Conciseness
+
+**Precedence Rule**: Skills > Tools (always invoke skills, not raw MCP tools)
+
+**Conciseness Requirement**: Skill descriptions (loaded at agent start time) must be:
+- **Under 500 tokens** for the YAML frontmatter description field
+- **Focus on "when to use"** with 3-5 concrete examples
+- **Defer implementation details** to the skill body (not frontmatter)
+
+**Example**:
+```yaml
+---
+name: cve-impact
+description: |
+  Analyze CVE impact across the fleet without immediate remediation.
+
+  Use when:
+  - "What are the most critical vulnerabilities?"
+  - "Show CVEs affecting my systems"
+  - "List high-severity CVEs"
+
+  NOT for remediation actions (use remediator agent instead).
+model: inherit
+---
+```
+
+**Rationale**: Minimizes token usage at agent initialization while maintaining clarity.
+
+### 4. Dependencies Declaration
+
+Every skill MUST include a **Dependencies** section listing:
+- **Skills**: Other skills this skill may invoke
+- **MCP Tools**: Specific tools from MCP servers
+- **MCP Servers**: Required MCP server names
+- **Documentation**: Reference docs for context
+
+**Required Format**:
+```markdown
+## Dependencies
+
+### Required MCP Servers
+- `lightspeed-mcp` - Red Hat Lightspeed platform access
+
+### Required MCP Tools
+- `vulnerability__get_cves` (from lightspeed-mcp) - List CVEs
+- `vulnerability__get_cve` (from lightspeed-mcp) - Get CVE details
+
+### Related Skills
+- `cve-validation` - Validate CVEs before impact analysis
+- `fleet-inventory` - Identify affected systems
+
+### Reference Documentation
+- [cvss-scoring.md](docs/references/cvss-scoring.md) - CVSS severity mappings
+- [insights-api.md](docs/insights/insights-api.md) - API usage patterns
+```
+
+**Rationale**: Makes dependencies explicit for debugging and ensures proper error handling.
+
+### 5. Human-in-the-Loop Requirements
+
+Skills performing **critical operations** MUST include this section:
+
+**Required Section**:
+```markdown
+## Critical: Human-in-the-Loop Requirements
+
+This skill requires explicit user confirmation at the following steps:
+
+1. **Before Tool Invocation** [if applicable]
+   - Ask: "Should I proceed with [specific action]?"
+   - Wait for user confirmation
+
+2. **Before Destructive Actions** [if applicable]
+   - Display preview of changes
+   - Ask: "Review the changes above. Should I execute this?"
+   - Wait for explicit "yes" or "proceed"
+
+3. **After Each Major Step** [if applicable]
+   - Report results
+   - Ask: "Continue to next step?"
+
+**Never assume approval** - always wait for explicit user confirmation.
+```
+
+**When to Use**:
+- Playbook execution (ansible-mcp-server)
+- System modifications (package updates, config changes)
+- Multi-system operations (batch remediation)
+- Data deletion or irreversible actions
+
+**Rationale**: Prevents unintended automation; maintains user control over critical operations.
+
+### 6. Mandatory Skill Sections
+
+Every skill MUST include these sections in order:
+
+#### Template Structure:
+```markdown
+---
+name: skill-name
+description: |
+  [Concise when-to-use with 3-5 examples]
+model: inherit|sonnet|haiku
+color: red|blue|green|yellow
+---
+
+# [Skill Name]
+
+## Prerequisites
+
+**Required MCP Servers**: `server-name` ([setup guide](link))
+**Required MCP Tools**: `tool_name` (from server-name)
+**Environment Variables**: `VAR_NAME` (if applicable)
+
+**Verification**:
+Before executing, verify MCP server availability:
+1. Check `server-name` is configured in `.mcp.json`
+2. Verify environment variables are set
+3. If missing: Report to user with setup instructions
+
+**Human Notification on Failure**:
+If prerequisites are not met:
+- ❌ "Cannot proceed: MCP server `server-name` is not available"
+- 📋 "Setup required: [link to setup guide]"
+- ❓ "How would you like to proceed? (setup now / skip / abort)"
+- ⏸️ Wait for user decision
+
+## When to Use This Skill
+
+Use this skill when:
+- [Specific scenario 1]
+- [Specific scenario 2]
+- [Specific scenario 3]
+
+Do NOT use when:
+- [Anti-pattern 1] → Use [alternative] instead
+- [Anti-pattern 2] → Use [alternative] instead
+
+## Workflow
+
+### Step 1: [Action Name]
+
+**MCP Tool**: `tool_name` (from server-name)
+
+**Parameters**:
+- `param1`: [exact specification with example]
+- `param2`: [exact specification with example]
+
+**Expected Output**: [describe what the tool returns]
+
+**Error Handling**:
+- If [error condition]: [how to handle]
+
+### Step 2: [Next Action]
+
+[Continue pattern...]
+
+## Dependencies
+
+[As specified in principle #4]
+
+## Critical: Human-in-the-Loop Requirements
+
+[As specified in principle #5, if applicable]
+
+## Example Usage
+
+[Concrete example with user query and skill response]
+```
+
+**Rationale**: Standardizes skill structure for consistency and completeness.
+
+### 7. MCP Server Availability Verification
+
+The **Prerequisites** section MUST include verification logic:
+
+**CRITICAL SECURITY CONSTRAINT**:
+- **NEVER print environment variable values in user-visible output**
+- When checking if env vars are set, only report presence/absence
+- Do NOT use `echo $VAR_NAME` or display actual credential values
+- Protect sensitive data like API keys, tokens, secrets, passwords
+
+**❌ WRONG - Exposes credentials**:
+```bash
+echo $LIGHTSPEED_CLIENT_SECRET  # Shows actual secret value
+```
+
+**✅ CORRECT - Check without exposing**:
+```bash
+# Check if set (exit code only, no output)
+test -n "$LIGHTSPEED_CLIENT_SECRET"
+
+# Or check and report boolean result
+if [ -n "$LIGHTSPEED_CLIENT_SECRET" ]; then
+    echo "✓ LIGHTSPEED_CLIENT_SECRET is set"
+else
+    echo "✗ LIGHTSPEED_CLIENT_SECRET is not set"
+fi
+```
+
+**In User-Visible Messages**:
+```
+✓ Environment variable LIGHTSPEED_CLIENT_ID is set
+✓ Environment variable LIGHTSPEED_CLIENT_SECRET is set
+```
+
+**NEVER show**:
+```
+LIGHTSPEED_CLIENT_SECRET=sk-abc123-xyz789-...  ❌ SECURITY VIOLATION
+```
+
+**Rationale**: Prevents accidental credential exposure in conversation history, logs, or screenshots.
+
+---
+
+**Required Pattern**:
+```markdown
+## Prerequisites
+
+**Required MCP Servers**: `lightspeed-mcp` ([setup guide](https://console.redhat.com/))
+**Required MCP Tools**:
+- `vulnerability__get_cves`
+- `vulnerability__get_cve`
+
+**Verification Steps**:
+1. **Check MCP Server Configuration**
+   - Verify `lightspeed-mcp` exists in `.mcp.json`
+   - If missing → Proceed to Human Notification
+
+2. **Check Environment Variables**
+   - Verify `LIGHTSPEED_CLIENT_ID` is set
+   - Verify `LIGHTSPEED_CLIENT_SECRET` is set
+   - If missing → Proceed to Human Notification
+
+3. **Test MCP Server Connection** (optional, for critical skills)
+   - Attempt simple tool call (e.g., `get_mcp_version`)
+   - If fails → Proceed to Human Notification
+
+**Human Notification Protocol**:
+
+When prerequisites fail, the skill MUST:
+
+1. **Stop Execution Immediately** - Do not attempt tool calls
+2. **Report Clear Error**:
+   ```
+   ❌ Cannot execute [skill-name]: MCP server `lightspeed-mcp` is not available
+
+   📋 Setup Instructions:
+   1. Add lightspeed-mcp to `.mcp.json` (see: [setup guide])
+   2. Set environment variables:
+      export LIGHTSPEED_CLIENT_ID="your-id"
+      export LIGHTSPEED_CLIENT_SECRET="your-secret"
+   3. Restart Claude Code to reload MCP servers
+
+   🔗 Documentation: [link to MCP server docs]
+   ```
+
+3. **Request User Decision**:
+   ```
+   ❓ How would you like to proceed?
+
+   Options:
+   - "setup" - I'll help you configure the MCP server now
+   - "skip" - Skip this skill and continue with alternative approach
+   - "abort" - Stop the workflow entirely
+
+   Please respond with your choice.
+   ```
+
+4. **Wait for Explicit User Input** - Do not proceed automatically
+
+**Error Message Templates**:
+
+- Missing MCP Server:
+  ```
+  ❌ MCP server `{server_name}` not configured in .mcp.json
+  📋 Add server configuration: [setup guide link]
+  ```
+
+- Missing Environment Variable:
+  ```
+  ❌ Environment variable `{VAR_NAME}` not set
+  📋 Set variable: export {VAR_NAME}="your-value"
+
+  ⚠️ SECURITY: Never expose actual values in output or logs
+  ```
+
+- Connection Failure:
+  ```
+  ❌ Cannot connect to `{server_name}` MCP server
+  📋 Possible causes:
+     - Container not running (run: podman ps)
+     - Network issues (check: podman logs)
+     - Invalid credentials (verify env vars)
+  ```
+```
+
+**Rationale**: Provides graceful degradation and clear user guidance when dependencies are missing.
+
 ### Skill File Format
+
+Skills MUST follow the structure defined in **Design Principle #6** above. Here's a minimal template:
 
 ```yaml
 ---
 name: skill-name
 description: |
-  When to use this skill (multi-line)
-  Include concrete examples
+  [Concise when-to-use with 3-5 examples - under 500 tokens]
 model: inherit|sonnet|haiku
 color: red|blue|green|yellow
 ---
 
-# Skill Implementation Guide
+# [Skill Name]
+
+## Prerequisites
+[As defined in Design Principle #7 - with verification and human notification]
+
+## When to Use This Skill
+[Clear use cases and anti-patterns]
+
 ## Workflow
 ### Step 1: [Action]
-**MCP Tool**: `tool_name` (from server-name toolset)
-[Implementation details with examples]
+**MCP Tool**: `tool_name` (from server-name)
+**Parameters**: [Exact specification - Design Principle #2]
+[Implementation details]
+
+## Dependencies
+[As defined in Design Principle #4]
+
+## Critical: Human-in-the-Loop Requirements
+[If applicable - Design Principle #5]
 ```
 
+**Important**: See **Design Principles for Skills and Agents** section above for complete requirements and rationale.
+
 ### Agent File Format
+
+Agents MUST follow similar principles as skills, with focus on skill orchestration:
 
 ```yaml
 ---
 name: agent-name
 description: |
   When to use this agent vs skills
-  Include examples with user queries
+  [Concise with 3-5 examples - under 500 tokens]
 model: inherit
 color: red
 tools: ["All"]
 ---
 
-# Agent System Prompt
+# [Agent Name]
+
+## Prerequisites
+[MCP servers and skills this agent depends on - Design Principle #7]
+
+## When to Use This Agent
+[Multi-step workflows requiring orchestration]
+
 ## Workflow
+
 ### 1. Step Name
 **Invoke the skill-name skill**:
 ```
 Skill: skill-name
-Args: arg1 arg2
+Args: [Precise parameters - Design Principle #2]
 ```
-[Skill integration guidance]
+
+**Document Consultation** (if needed):
+I consulted [filename.md](path/to/filename.md) to understand [topic].
+[Design Principle #1]
+
+**Human Confirmation** (if critical):
+Ask: "Should I proceed with [action]?"
+Wait for confirmation.
+[Design Principle #5]
+
+### 2. Next Step
+[Continue orchestration pattern...]
+
+## Dependencies
+[Skills, tools, docs this agent uses - Design Principle #4]
+
+## Critical: Human-in-the-Loop Requirements
+[For agents performing critical operations - Design Principle #5]
 ```
+
+**Important**: Agents inherit the same design principles as skills. See **Design Principles for Skills and Agents** section above.
 
 ### MCP Server Integration
 
@@ -216,7 +596,7 @@ last_updated: YYYY-MM-DD
 
 ## Integration with Red Hat Platforms
 
-### Red Hat Insights MCP Server
+### Red Hat Lightspeed MCP Server
 - CVE vulnerability data and risk assessment
 - System inventory and compliance
 - Remediation playbook generation
@@ -234,16 +614,33 @@ The `rh-sre` pack is the most complete implementation, demonstrating:
 - Agent-based workflows (remediator agent)
 - AI-optimized documentation system
 - MCP server integration
-- Red Hat Insights platform integration
+- Red Hat Lightspeed platform integration
 
 When creating new collection, use `rh-sre` as the architectural reference.
 
 ## Key Principles
 
-1. **Skills encapsulate tools** - Never call MCP tools directly
+### Core Architecture
+1. **Skills encapsulate tools** - Never call MCP tools directly; always invoke skills
 2. **Agents orchestrate skills** - Complex workflows delegate to specialized skills
-3. **Environment variables for secrets** - Never hardcode credentials
-4. **Official sources only** - Document all sources in SOURCES.md
-5. **Progressive disclosure** - Load docs incrementally based on task needs
-6. **Production-ready examples** - No toy code, include error handling
-7. **Persona-focused design** - Each pack serves specific user roles
+3. **Skill precedence** - Skills > Tools in all cases (Design Principle #3)
+
+### Security & Configuration
+4. **Environment variables for secrets** - Never hardcode credentials
+5. **Never expose credential values** - Check env vars are set, but NEVER print their values in output
+6. **Verify prerequisites** - Check MCP server availability before execution (Design Principle #7)
+7. **Human-in-the-loop for critical ops** - Require explicit confirmation (Design Principle #5)
+
+### Documentation & Transparency
+8. **Official sources only** - Document all sources in SOURCES.md
+9. **Declare document consultation** - Explicitly state "I consulted [file]" (Design Principle #1)
+10. **Progressive disclosure** - Load docs incrementally based on task needs
+
+### Quality & Usability
+11. **Precise parameters** - Specify exact tool parameters for first-attempt success (Design Principle #2)
+12. **Declare dependencies** - List all skills, tools, docs, and MCP servers (Design Principle #4)
+13. **Production-ready examples** - No toy code, include error handling
+14. **Persona-focused design** - Each collection serves specific user roles
+15. **Concise skill descriptions** - Keep YAML frontmatter under 500 tokens (Design Principle #3)
+
+**See**: **Design Principles for Skills and Agents** section for detailed requirements and templates.

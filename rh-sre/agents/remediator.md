@@ -117,10 +117,10 @@ Args: CVE-ID [system-filter]
 ```
 
 The skill will:
-- Consult `docs/insights/vulnerability-logic.md` for Red Hat Insights CVE assessment methodology
+- Consult `docs/insights/vulnerability-logic.md` for Red Hat Lightspeed CVE assessment methodology
 - Consult `docs/references/cvss-scoring.md` for CVSS interpretation guidelines
-- Use `get_cve` (insights-mcp vulnerability toolset) to retrieve CVE metadata
-- Use `get_cve_systems` (insights-mcp vulnerability toolset) to identify affected systems
+- Use `get_cve` (lightspeed-mcp vulnerability toolset) to retrieve CVE metadata
+- Use `get_cve_systems` (lightspeed-mcp vulnerability toolset) to identify affected systems
 - Assess CVSS score, severity, attack vector, and exploitability
 - Determine risk level (Critical/High/Medium/Low) based on Red Hat guidelines
 - Provide structured risk assessment, affected systems list, and business impact analysis
@@ -138,7 +138,7 @@ Args: CVE-ID
 
 The skill will:
 - Validate CVE format (CVE-YYYY-NNNNN)
-- Check CVE exists in Red Hat Insights database
+- Check CVE exists in Red Hat Lightspeed database
 - Verify CVSS score, severity, and affected packages
 - Confirm remediation is available
 - Return validation status with metadata
@@ -155,8 +155,8 @@ Args: CVE-ID [system-filter]
 ```
 
 The skill will:
-- Identify affected systems using `get_cve_systems` (insights-mcp vulnerability toolset)
-- Gather detailed system information using `get_host_details` (insights-mcp inventory toolset)
+- Identify affected systems using `get_cve_systems` (lightspeed-mcp vulnerability toolset)
+- Gather detailed system information using `get_host_details` (lightspeed-mcp inventory toolset)
 - Analyze RHEL versions, environments (dev/staging/prod), and system criticality
 - Determine optimal remediation strategy (batch vs individual, rolling update, maintenance windows)
 - Return comprehensive context summary with recommended approach
@@ -175,7 +175,7 @@ Args: CVE-ID system-list [cve-type] [strategy]
 The skill will:
 - Consult documentation (cve-remediation-templates.md, package-management.md)
 - Detect CVE type (kernel, service, SELinux, batch) automatically
-- Generate playbook using `create_vulnerability_playbook` (insights-mcp remediations toolset)
+- Generate playbook using `create_vulnerability_playbook` (lightspeed-mcp remediations toolset)
 - Apply Red Hat best practices and documentation patterns
 - Validate playbook YAML syntax and completeness
 - Return production-ready Ansible playbook
@@ -240,7 +240,7 @@ Args: CVE-ID system-list
 ```
 
 The skill will:
-- Check CVE status in Insights using `get_cve` and `get_cve_systems`
+- Check CVE status in Lightspeed using `get_cve` and `get_cve_systems`
 - Verify package versions were updated using `get_host_details`
 - Confirm affected services are running properly
 - Generate comprehensive verification report with pass/fail status
@@ -260,7 +260,7 @@ The skill will:
 
 - **Invalid CVE**: "CVE-XXXX-YYYY is not valid or doesn't exist in the database. Please verify the CVE ID."
 - **No Remediation Available**: "CVE-XXXX-YYYY doesn't have an automated remediation playbook. Manual patching required. Here are the affected packages..."
-- **System Not Found**: "System XXXX is not in the Insights inventory. Please ensure it's registered and check the system UUID."
+- **System Not Found**: "System XXXX is not in the Lightspeed inventory. Please ensure it's registered and check the system UUID."
 - **Batch Partial Failure**: "Successfully processed X of Y CVEs. Failed CVEs: [list]. Reason: [explanations]"
 
 ## Output Format

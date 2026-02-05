@@ -3,7 +3,7 @@ name: remediation-verifier
 description: |
   **CRITICAL**: This skill must be used for remediation verification. DO NOT use raw MCP tools like get_cve or get_host_details directly for verification.
 
-  Verify CVE remediation success by checking Red Hat Insights CVE status, validating package versions, and confirming service health. Use this skill after executing remediation playbooks to ensure vulnerabilities are properly fixed.
+  Verify CVE remediation success by checking Red Hat Lightspeed CVE status, validating package versions, and confirming service health. Use this skill after executing remediation playbooks to ensure vulnerabilities are properly fixed.
 
   This skill orchestrates MCP tools (get_cve, get_cve_systems, get_host_details) to provide comprehensive remediation verification including CVE status checking, package version validation, and service health confirmation.
 
@@ -35,9 +35,9 @@ This skill verifies CVE remediation success by validating that vulnerabilities h
 
 ### 1. CVE Status Verification
 
-**MCP Tool**: `get_cve` and `get_cve_systems` (from insights-mcp vulnerability toolset)
+**MCP Tool**: `get_cve` and `get_cve_systems` (from lightspeed-mcp vulnerability toolset)
 
-Check CVE status in Red Hat Insights after remediation:
+Check CVE status in Red Hat Lightspeed after remediation:
 
 ```
 Step 1: Retrieve current CVE status
@@ -62,11 +62,11 @@ Verification Logic:
 ✗ System still in affected list with "vulnerable" status → FAIL
 ```
 
-**Important**: Red Hat Insights updates may take time (up to 24 hours). Consider this when interpreting results.
+**Important**: Red Hat Lightspeed updates may take time (up to 24 hours). Consider this when interpreting results.
 
 ### 2. Package Version Verification
 
-**MCP Tool**: `get_host_details` (from insights-mcp inventory toolset)
+**MCP Tool**: `get_host_details` (from lightspeed-mcp inventory toolset)
 
 Verify package versions on remediated systems:
 
@@ -107,7 +107,7 @@ def verify_package_version(installed, expected_fixed):
 
 ### 3. Service Health Verification
 
-**MCP Tool**: `get_host_details` (from insights-mcp inventory toolset)
+**MCP Tool**: `get_host_details` (from lightspeed-mcp inventory toolset)
 
 Verify affected services are running properly:
 
@@ -286,7 +286,7 @@ When completing verification, provide output in this format:
 
 ## Recommendations
 1. Remediation verified successfully on all 10 systems
-2. Re-scan systems with Red Hat Insights for updated inventory:
+2. Re-scan systems with Red Hat Lightspeed for updated inventory:
    ```bash
    sudo insights-client --check-results
    ```
@@ -325,9 +325,9 @@ When completing verification, provide output in this format:
 
 1. **Wait before verification** - Allow 5-10 minutes after playbook execution
 2. **Check multiple indicators** - CVE status + package version + service health
-3. **Re-scan with Insights** - Recommend insights-client --check-results
+3. **Re-scan with Lightspeed** - Recommend insights-client --check-results
 4. **Document failures** - Provide detailed troubleshooting for any failures
-5. **Consider timing** - Insights inventory updates may take up to 24 hours
+5. **Consider timing** - Lightspeed inventory updates may take up to 24 hours
 6. **Verify at scale** - Use batch verification for large deployments
 
 ## Tools Reference
@@ -337,7 +337,7 @@ This skill primarily uses:
 - `get_cve_systems` (vulnerability toolset) - Check if systems still affected
 - `get_host_details` (inventory toolset) - Verify package versions and service status
 
-All tools are provided by the insights-mcp MCP server configured in `.mcp.json`.
+All tools are provided by the lightspeed-mcp MCP server configured in `.mcp.json`.
 
 ## Integration with Other Skills
 
@@ -355,7 +355,7 @@ All tools are provided by the insights-mcp MCP server configured in `.mcp.json`.
 **Verification-First Principle**:
 ```
 Never assume remediation worked. Always verify:
-1. CVE status in Insights
+1. CVE status in Lightspeed
 2. Package versions updated
 3. Services running
 

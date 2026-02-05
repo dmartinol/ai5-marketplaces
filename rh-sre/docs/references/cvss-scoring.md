@@ -474,7 +474,7 @@ CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H
 
 ```yaml
 # Step 1: Retrieve CVE data (use vulnerability-logic.md)
-- Get CVSS score from Red Hat Insights
+- Get CVSS score from Red Hat Lightspeed
 - Get Red Hat severity rating
 - Check vulnerable vs affected status
 
@@ -612,7 +612,7 @@ Downgrade priority if:
 
 ## Related Documentation
 
-- **[Red Hat Insights Vulnerability Logic](../insights/vulnerability-logic.md)** - How Insights assesses CVEs
+- **[Red Hat Lightspeed Vulnerability Logic](../insights/vulnerability-logic.md)** - How Lightspeed assesses CVEs
 - **[CVE Remediation Templates](../ansible/cve-remediation-templates.md)** - Playbooks for remediation
 - **[Compliance Frameworks](compliance-frameworks.md)** - PCI-DSS, SOC 2, NIST requirements
 

@@ -154,7 +154,7 @@
       },
       "prerequisites": [
         "CVE ID known",
-        "Red Hat Insights access"
+        "Red Hat Lightspeed access"
       ]
     },
     "httpd_cve": {

@@ -3,7 +3,7 @@ name: playbook-generator
 description: |
   **CRITICAL**: This skill must be used for playbook generation. DO NOT use raw MCP tools like create_vulnerability_playbook directly.
 
-  Generate production-ready Ansible remediation playbooks for CVE vulnerabilities with Red Hat best practices, error handling, and Kubernetes safety patterns. Use this skill when you need to create remediation playbooks that follow Red Hat Insights patterns and incorporate RHEL-specific considerations.
+  Generate production-ready Ansible remediation playbooks for CVE vulnerabilities with Red Hat best practices, error handling, and Kubernetes safety patterns. Use this skill when you need to create remediation playbooks that follow Red Hat Lightspeed patterns and incorporate RHEL-specific considerations.
 
   This skill orchestrates MCP tools (create_vulnerability_playbook) while consulting documentation (cve-remediation-templates.md, package-management.md) to enhance playbooks with Red Hat best practices and RHEL-specific patterns.
 
@@ -90,9 +90,9 @@ System Context Checks:
 
 ### 4. Playbook Generation
 
-**MCP Tool**: `create_vulnerability_playbook` (from insights-mcp remediations toolset)
+**MCP Tool**: `create_vulnerability_playbook` (from lightspeed-mcp remediations toolset)
 
-Generate base playbook using Red Hat Insights:
+Generate base playbook using Red Hat Lightspeed:
 
 ```yaml
 # Call MCP tool with parameters:
@@ -356,7 +356,7 @@ ansible-playbook -i inventory remediation-CVE-YYYY-NNNNN.yml --become
 
 **CVE has no automated remediation**:
 ```
-CVE-YYYY-NNNNN does not have an automated remediation playbook available in Red Hat Insights.
+CVE-YYYY-NNNNN does not have an automated remediation playbook available in Red Hat Lightspeed.
 
 Manual remediation required:
 1. Affected packages: package-name-version
@@ -401,12 +401,12 @@ Proceeding with standard playbook (without pod eviction). Add pod eviction manua
 ## Tools Reference
 
 This skill primarily uses:
-- `create_vulnerability_playbook` (remediations toolset) - Generate base playbook from Red Hat Insights
+- `create_vulnerability_playbook` (remediations toolset) - Generate base playbook from Red Hat Lightspeed
 - Read tool - Access documentation for best practices
   - `docs/ansible/cve-remediation-templates.md` - Playbook templates
   - `docs/rhel/package-management.md` - RHEL-specific patterns
 
-All MCP tools are provided by the insights-mcp server configured in `.mcp.json`.
+All MCP tools are provided by the lightspeed-mcp server configured in `.mcp.json`.
 All documentation is available in the `docs/` directory.
 
 ## Integration with Other Skills

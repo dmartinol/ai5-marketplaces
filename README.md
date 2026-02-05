@@ -200,13 +200,13 @@ git push
 
 The documentation site will automatically update via GitHub Actions.
 
-### Example: Adding Red Hat Insights MCP Server
+### Example: Adding Red Hat Lightspeed MCP Server
 
 **File: `rh-sre/.mcp.json`**
 ```json
 {
   "mcpServers": {
-    "insights-mcp": {
+    "lightspeed-mcp": {
       "command": "podman",
       "args": ["run", "--rm", "-i",
                "--env", "LIGHTSPEED_CLIENT_ID",
@@ -216,7 +216,7 @@ The documentation site will automatically update via GitHub Actions.
         "LIGHTSPEED_CLIENT_ID": "${LIGHTSPEED_CLIENT_ID}",
         "LIGHTSPEED_CLIENT_SECRET": "${LIGHTSPEED_CLIENT_SECRET}"
       },
-      "description": "Red Hat Insights MCP server for CVE data and remediation",
+      "description": "Red Hat Lightspeed MCP server for CVE data and remediation",
       "security": {
         "isolation": "container",
         "network": "local",
@@ -230,7 +230,7 @@ The documentation site will automatically update via GitHub Actions.
 **File: `docs/mcp.json`**
 ```json
 {
-  "insights-mcp": {
+  "lightspeed-mcp": {
     "repository": "https://github.com/RedHatInsights/insights-mcp",
     "tools": [
       {

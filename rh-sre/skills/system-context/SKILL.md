@@ -36,7 +36,7 @@ This skill gathers comprehensive system inventory and deployment context for CVE
 
 ### 1. Identify Affected Systems
 
-**MCP Tool**: `get_cve_systems` (from insights-mcp vulnerability toolset)
+**MCP Tool**: `get_cve_systems` (from lightspeed-mcp vulnerability toolset)
 
 Retrieve list of systems affected by the CVE:
 
@@ -64,7 +64,7 @@ Example Response:
 
 ### 2. Gather Detailed System Information
 
-**MCP Tool**: `get_host_details` (from insights-mcp inventory toolset)
+**MCP Tool**: `get_host_details` (from lightspeed-mcp inventory toolset)
 
 For each affected system, retrieve comprehensive details:
 
@@ -413,18 +413,18 @@ Possible reasons:
 No remediation required.
 ```
 
-**Insights inventory access error**:
+**Lightspeed inventory access error**:
 ```
-Unable to retrieve system details from Red Hat Insights inventory.
+Unable to retrieve system details from Red Hat Lightspeed inventory.
 
 Possible causes:
-- Systems not registered to Red Hat Insights
-- Insights inventory sync pending
+- Systems not registered to Red Hat Lightspeed
+- Lightspeed inventory sync pending
 - API authentication issue
 
 Suggestions:
 - Verify systems are registered: subscription-manager status
-- Check Insights connection: insights-client --status
+- Check Lightspeed connection: insights-client --status
 - Re-run inventory sync: insights-client --register
 ```
 
@@ -432,11 +432,11 @@ Suggestions:
 ```
 Unable to fully classify systems due to incomplete tagging.
 
-Proceeding with Red Hat Insights data only.
+Proceeding with Red Hat Lightspeed data only.
 Note: Environment and criticality tags missing from some systems.
 
 To improve system classification:
-1. Add environment tags to systems in Red Hat Insights
+1. Add environment tags to systems in Red Hat Lightspeed
 2. Add criticality/role tags for better prioritization
 3. Ensure all systems are registered and reporting
 ```
@@ -457,7 +457,7 @@ This skill primarily uses:
 - `get_cve_systems` (vulnerability toolset) - Get list of systems affected by CVE
 - `get_host_details` (inventory toolset) - Get detailed system information
 
-All tools are provided by the insights-mcp MCP server configured in `.mcp.json`.
+All tools are provided by the lightspeed-mcp MCP server configured in `.mcp.json`.
 
 ## Integration with Other Skills
 

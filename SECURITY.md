@@ -58,7 +58,7 @@ const apiKey = process.env.GITHUB_TOKEN;
 ```json
 {
   "mcpServers": {
-    "insights-mcp": {
+    "lightspeed-mcp": {
       "env": {
         "LIGHTSPEED_CLIENT_ID": "12345-abcde",
         "LIGHTSPEED_CLIENT_SECRET": "sk-proj-abc123..."
@@ -72,7 +72,7 @@ const apiKey = process.env.GITHUB_TOKEN;
 ```json
 {
   "mcpServers": {
-    "insights-mcp": {
+    "lightspeed-mcp": {
       "env": {
         "LIGHTSPEED_CLIENT_ID": "${LIGHTSPEED_CLIENT_ID}",
         "LIGHTSPEED_CLIENT_SECRET": "${LIGHTSPEED_CLIENT_SECRET}"

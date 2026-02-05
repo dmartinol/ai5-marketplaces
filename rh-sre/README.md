@@ -19,11 +19,11 @@ The rh-sre collection is a reference implementation demonstrating the full agent
 
 - Claude Code CLI or IDE extension
 - Podman or Docker installed
-- Red Hat Insights service account ([setup guide](https://console.redhat.com/))
+- Red Hat Lightspeed service account ([setup guide](https://console.redhat.com/))
 
 ### Environment Setup
 
-Configure Red Hat Insights credentials:
+Configure Red Hat Lightspeed credentials:
 
 ```bash
 export LIGHTSPEED_CLIENT_ID="your-service-account-client-id"
@@ -56,12 +56,12 @@ claude plugin list --json | jq '[.[] | select(.id | contains("redhat"))]'
 The pack provides 7 specialized skills for common SRE operations:
 
 ### 1. **fleet-inventory** - System Discovery and Fleet Management
-Query and display Red Hat Insights managed system inventory.
+Query and display Red Hat Lightspeed managed system inventory.
 
 **Use when:**
 - "Show the managed fleet"
 - "List all RHEL 8 systems"
-- "What systems are registered in Insights?"
+- "What systems are registered in Lightspeed?"
 
 **What it does:**
 - Retrieves all registered systems
@@ -97,7 +97,7 @@ Validate CVE existence and remediation availability.
 - Returns CVE metadata and severity
 
 ### 4. **system-context** - System Information Gathering
-Collect detailed system information from Red Hat Insights.
+Collect detailed system information from Red Hat Lightspeed.
 
 **Use when:**
 - "What systems are affected by CVE-X?"
@@ -118,7 +118,7 @@ Generate Ansible remediation playbooks following Red Hat best practices.
 - "Generate Ansible playbook to patch CVE-Y"
 
 **What it does:**
-- Calls Red Hat Insights remediation API
+- Calls Red Hat Lightspeed remediation API
 - Generates production-ready Ansible playbooks
 - Includes error handling and rollback steps
 - Follows Red Hat standards
@@ -201,7 +201,7 @@ The rh-sre pack includes AI-optimized documentation in the `docs/` directory dem
 - **RHEL**: Red Hat Enterprise Linux administration
 - **Ansible**: Automation and playbook development
 - **OpenShift**: Container platform operations
-- **Insights**: Red Hat Insights platform integration
+- **Lightspeed**: Red Hat Lightspeed platform integration
 - **References**: CVSS scoring, security standards
 
 See [docs/INDEX.md](docs/INDEX.md) for the complete documentation map.
@@ -210,13 +210,13 @@ See [docs/INDEX.md](docs/INDEX.md) for the complete documentation map.
 
 The pack integrates with two MCP servers (configured in `.mcp.json`):
 
-### 1. **insights-mcp** - Red Hat Insights Platform
+### 1. **lightspeed-mcp** - Red Hat Lightspeed Platform
 - CVE data and vulnerability management
 - System inventory and compliance
 - Remediation playbook generation
 - Requires: `LIGHTSPEED_CLIENT_ID`, `LIGHTSPEED_CLIENT_SECRET`
 
-**Repository**: https://github.com/redhat/insights-mcp
+**Repository**: https://github.com/redhat/lightspeed-mcp
 
 ### 2. **ansible-mcp-server** - Ansible Execution (Mock)
 - Playbook execution and job tracking
@@ -285,12 +285,12 @@ MCP servers are configured in `.mcp.json`:
 ```json
 {
   "mcpServers": {
-    "insights-mcp": {
+    "lightspeed-mcp": {
       "command": "podman",
       "args": ["run", "--rm", "-i",
                "--env", "LIGHTSPEED_CLIENT_ID",
                "--env", "LIGHTSPEED_CLIENT_SECRET",
-               "quay.io/redhat-services-prod/insights-mcp:latest"],
+               "quay.io/redhat-services-prod/lightspeed-mcp:latest"],
       "env": {
         "LIGHTSPEED_CLIENT_ID": "${LIGHTSPEED_CLIENT_ID}",
         "LIGHTSPEED_CLIENT_SECRET": "${LIGHTSPEED_CLIENT_SECRET}"
@@ -323,12 +323,12 @@ MCP servers are configured in `.mcp.json`:
 3. Test container manually:
    ```bash
    podman run --rm -i --env LIGHTSPEED_CLIENT_ID --env LIGHTSPEED_CLIENT_SECRET \
-     ghcr.io/redhat/insights-mcp:latest
+     ghcr.io/redhat/lightspeed-mcp:latest
    ```
 
 ### Authentication Failures
 
-**Problem**: insights-mcp reports authentication errors
+**Problem**: lightspeed-mcp reports authentication errors
 
 **Solutions**:
 1. Verify service account credentials in Red Hat Console
@@ -409,8 +409,8 @@ See main repository [CLAUDE.md](../CLAUDE.md) for:
 
 ## References
 
-- [Red Hat Insights](https://console.redhat.com/insights)
-- [insights-mcp GitHub](https://github.com/redhat/insights-mcp)
+- [Red Hat Lightspeed](https://console.redhat.com/insights)
+- [lightspeed-mcp GitHub](https://github.com/redhat/lightspeed-mcp)
 - [mock-ansible-mcp-server GitHub](https://github.com/dmartinol/mock-ansible-mcp-server)
 - [Claude Code Documentation](https://docs.anthropic.com/claude-code)
 - [MCP Protocol Specification](https://modelcontextprotocol.io/)

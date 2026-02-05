@@ -248,7 +248,7 @@ Monitoring job status...
 
 3. Monitor systems:
    - Watch for 24-48 hours for any issues
-   - Verify Red Hat Insights reflects patched status
+   - Verify Red Hat Lightspeed reflects patched status
 ```
 
 ## Examples
