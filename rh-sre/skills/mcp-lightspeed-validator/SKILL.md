@@ -185,6 +185,12 @@ required_tools = [
     'create_vulnerability_playbook'             # Remediations
 ]
 
+# CRITICAL: Check if ANY tools were returned
+if len(available_tools) == 0:
+    # Server responded but has zero tools - configuration issue
+    validation_failed = True
+    error_message = "Server connected but no MCP tools found (check server configuration)"
+
 # Check if tool exists with or without prefix
 for tool in required_tools:
     if not (tool in available_tools or f"*__{tool}" in available_tools):
@@ -195,11 +201,13 @@ for tool in required_tools:
 - ✓ "Successfully connected to lightspeed-mcp server"
 - ✓ "All required MCP tools are available (5/5 tools validated)"
 - ⚠ "Successfully connected but some tools are missing: `get_cves`, `create_vulnerability_playbook` (3/5 tools available)"
+- ✗ "Server connected but no MCP tools found (suggests configuration or authentication issue)"
 - ✗ "Cannot connect to lightspeed-mcp server (check container status)"
 
 **If all tools present**: Report SUCCESS
 **If some tools missing**: Report PARTIAL with warning about missing tools
-**If connection fails**: Proceed to Human Notification Protocol (Step 4)
+**If zero tools found**: Report FAILED and proceed to Human Notification Protocol (Step 4)
+**If connection fails**: Report FAILED and proceed to Human Notification Protocol (Step 4)
 
 ### Step 4: Human Notification Protocol
 
@@ -251,6 +259,33 @@ Setup instructions:
 3. Restart Claude Code to reload environment
 
 ⚠️ SECURITY: Never commit credentials to git or expose them in output
+```
+
+For zero tools found (server connected but no tools available):
+```
+❌ Server connected but no MCP tools found
+
+This suggests a configuration or authentication issue. The MCP server responded
+but has no tools registered.
+
+📋 Troubleshooting steps:
+1. Check environment variables are correctly set:
+   - LIGHTSPEED_CLIENT_ID (verify it's not empty)
+   - LIGHTSPEED_CLIENT_SECRET (verify it's not empty)
+
+2. Check container logs for authentication errors:
+   podman logs $(podman ps | grep lightspeed | awk '{print $1}')
+
+3. Verify credentials are valid:
+   - Test at: https://console.redhat.com/settings/integrations
+   - Ensure credentials haven't expired
+
+4. Restart the MCP server with correct credentials:
+   podman stop $(podman ps | grep lightspeed | awk '{print $1}')
+   # Claude Code will restart it with updated environment variables
+
+5. If issue persists, check MCP server documentation:
+   https://github.com/RedHatInsights/insights-mcp
 ```
 
 For connection failures:
@@ -319,7 +354,28 @@ Some skills may fail if they require the missing tools.
 You may proceed with limited functionality.
 ```
 
-**Failure case**:
+**Failure case** (zero tools found):
+```
+✗ Lightspeed MCP Validation: FAILED
+
+Configuration:
+✓ MCP server configured in .mcp.json
+✓ Environment variable LIGHTSPEED_CLIENT_ID is set
+✓ Environment variable LIGHTSPEED_CLIENT_SECRET is set
+✗ Server connected but no MCP tools found (0 tools available)
+
+This suggests a configuration or authentication issue. The MCP server
+responded but has no tools registered.
+
+Possible causes:
+- Invalid or expired credentials
+- Authentication failure (check container logs)
+- MCP server misconfiguration
+
+See troubleshooting steps above for "zero tools found" scenario.
+```
+
+**Failure case** (general):
 ```
 ✗ Lightspeed MCP Validation: FAILED
 
@@ -412,7 +468,55 @@ Options:
 Please respond with your choice.
 ```
 
-### Example 3: Invoked by Another Skill
+### Example 3: Validation Failure - Zero Tools Found
+
+**User Query**: "Validate Lightspeed MCP before running CVE queries"
+
+**Skill Response**:
+```
+I'll validate your Lightspeed MCP configuration.
+
+Checking MCP server configuration...
+✓ MCP server `lightspeed-mcp` is configured in .mcp.json
+
+Checking environment variables...
+✓ Environment variable LIGHTSPEED_CLIENT_ID is set
+✓ Environment variable LIGHTSPEED_CLIENT_SECRET is set
+
+Testing server connectivity...
+✓ Server connection established
+✗ No MCP tools found (0 tools available)
+
+✗ Lightspeed MCP Validation: FAILED
+
+Configuration:
+✓ MCP server configured in .mcp.json
+✓ Environment variables are set
+✗ Server connected but no MCP tools found
+
+This suggests a configuration or authentication issue. The MCP server
+responded but has no tools registered.
+
+Possible causes:
+- Invalid or expired credentials (check Red Hat Console)
+- Authentication failure (check container logs)
+- MCP server misconfiguration
+
+📋 Troubleshooting:
+1. Verify credentials at: https://console.redhat.com/settings/integrations
+2. Check container logs: podman logs $(podman ps | grep lightspeed | awk '{print $1}')
+3. Restart MCP server with correct credentials
+
+❓ How would you like to proceed?
+
+Options:
+- "setup" - Help me reconfigure credentials now
+- "abort" - Stop the workflow entirely
+
+Please respond with your choice.
+```
+
+### Example 4: Invoked by Another Skill
 
 **Context**: The `cve-impact` skill invokes this validator before attempting CVE queries
 
