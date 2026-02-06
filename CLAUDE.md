@@ -102,19 +102,44 @@ I consulted [filename.md](path/to/filename.md) to understand [topic].
 
 Skills MUST specify **exact parameters** when instructing agents to use tools, ensuring first-attempt success.
 
-**❌ Bad Example**:
+**CRITICAL**: Document consultation must be specified BEFORE tool parameters to ensure it happens first.
+
+**❌ Bad Example - Vague parameters**:
 ```
 Use get_cve tool with the CVE ID
 ```
 
-**✅ Good Example**:
+**❌ Bad Example - Wrong parameters**:
 ```
-Use get_cve tool with:
-- cve_id: "CVE-2024-1234" (exact string from user query)
-- include_details: true (to get CVSS scores)
+**MCP Tool**: get_cves
+
+**Parameters**:
+- severity: ["Critical", "Important"]
+- sort_by: "cvss_score"
+```
+(Actual tool uses `impact: "7,6"` and `sort: "-cvss_score"`)
+
+**✅ Good Example - Correct structure with document consultation first**:
+```
+**CRITICAL**: Document consultation MUST happen BEFORE tool invocation.
+
+**Document Consultation** (REQUIRED - Execute FIRST):
+1. **Action**: Read [vulnerability-logic.md](../../docs/insights/vulnerability-logic.md) using the Read tool
+2. **Output to user**: "I consulted [vulnerability-logic.md]..."
+
+**MCP Tool**: `get_cves` or `vulnerability__get_cves` (from lightspeed-mcp)
+
+**Parameters**:
+- impact: "7,6" (string with comma-separated impact levels: 7=Important, 6=Moderate, 5=Low)
+- sort: "-cvss_score" (use - prefix for descending; valid fields: "cvss_score", "public_date")
+- limit: 20 (maximum number of CVEs to return)
 ```
 
-**Rationale**: Reduces trial-and-error cycles and provides deterministic guidance.
+**Rationale**:
+- **Ordering**: Document consultation before parameters ensures it's executed first
+- **Precision**: Exact parameter names and formats prevent tool errors
+- **Examples**: Value examples (e.g., "7,6") show correct format
+- **Determinism**: First-attempt success reduces wasted cycles
 
 ### 3. Skill Precedence and Conciseness
 
@@ -258,11 +283,19 @@ Do NOT use when:
 
 ### Step 1: [Action Name]
 
-**MCP Tool**: `tool_name` (from server-name)
+**CRITICAL**: Document consultation MUST happen BEFORE tool invocation.
+
+**Document Consultation** (REQUIRED - Execute FIRST):
+1. **Action**: Read [doc.md](../../docs/category/doc.md) using the Read tool to understand [specific topic]
+2. **Output to user**: "I consulted [doc.md](../../docs/category/doc.md) to understand [specific topic]."
+
+**MCP Tool**: `tool_name` or `toolset__tool_name` (from server-name)
 
 **Parameters**:
-- `param1`: [exact specification with example]
+- `param1`: [exact specification with example - see Design Principle #2]
+  - Example: `"CVE-2024-1234"`
 - `param2`: [exact specification with example]
+  - Example: `true` (description of what this does)
 
 **Expected Output**: [describe what the tool returns]
 
@@ -438,8 +471,19 @@ color: red|blue|green|yellow
 
 ## Workflow
 ### Step 1: [Action]
-**MCP Tool**: `tool_name` (from server-name)
-**Parameters**: [Exact specification - Design Principle #2]
+
+**CRITICAL**: Document consultation MUST happen BEFORE tool invocation.
+
+**Document Consultation** (REQUIRED - Execute FIRST):
+1. **Action**: Read [doc.md](path/to/doc.md) using the Read tool to understand [topic]
+2. **Output to user**: "I consulted [doc.md](path/to/doc.md) to understand [topic]."
+
+**MCP Tool**: `tool_name` or `toolset__tool_name` (from server-name)
+
+**Parameters**:
+- param1: "value" (exact format with example - Design Principle #2)
+- param2: true (description of what this does)
+
 [Implementation details]
 
 ## Dependencies
