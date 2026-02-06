@@ -101,7 +101,9 @@ Proceeding with fleet inventory query...
 
 ### Step 1: Retrieve System Inventory
 
-I consulted [insights-api.md](../../docs/insights/insights-api.md) to understand the `get_host_details` response format and pagination handling.
+**Document Consultation** (REQUIRED - Execute FIRST):
+1. **Action**: Read [insights-api.md](../../docs/insights/insights-api.md) using the Read tool to understand the `get_host_details` response format and pagination handling
+2. **Output to user**: "I consulted [insights-api.md](../../docs/insights/insights-api.md) to understand the `get_host_details` response format and pagination handling."
 
 **MCP Tool**: `get_host_details` (from lightspeed-mcp)
 
@@ -175,6 +177,10 @@ get_host_details(
 - `last_seen`: Last Lightspeed client run timestamp
 
 ### Step 2: Filter and Organize Systems
+
+**Document Consultation** (REQUIRED - Execute FIRST):
+1. **Action**: Read [fleet-management.md](../../docs/insights/fleet-management.md) using the Read tool to understand fleet inventory reporting structure and best practices
+2. **Output to user**: "I consulted [fleet-management.md](../../docs/insights/fleet-management.md) to structure this inventory report."
 
 Apply user-requested filters and grouping:
 
