@@ -22,7 +22,7 @@ A Claude Code plugin for building and deploying applications on Red Hat platform
 
 ## MCP Servers
 
-- **kubernetes** - Cluster management and Helm deployments
+- **openshift** - OpenShift cluster management and Helm deployments
 - **podman** - Container image management and local builds
 - **github** - Repository browsing and code analysis
 
