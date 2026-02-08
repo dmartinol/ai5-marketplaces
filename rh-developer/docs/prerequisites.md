@@ -1,3 +1,25 @@
+---
+title: Prerequisites
+category: setup
+sources:
+  - title: OpenShift CLI (oc) Installation
+    url: https://docs.openshift.com/container-platform/latest/cli_reference/openshift_cli/getting-started-cli.html
+    sections: Installing the CLI, Logging in
+    date_accessed: 2026-02-08
+  - title: Helm Installation Guide
+    url: https://helm.sh/docs/intro/install/
+    sections: From script, From package managers
+    date_accessed: 2026-02-08
+  - title: Podman Installation
+    url: https://podman.io/docs/installation
+    sections: Linux, macOS, Windows
+    date_accessed: 2026-02-08
+  - title: Skopeo Installation
+    url: https://github.com/containers/skopeo/blob/main/install.md
+    sections: Distribution packages, Building from source
+    date_accessed: 2026-02-08
+---
+
 # Prerequisites
 
 This document lists all tools required by the rh-developer agentic collection.

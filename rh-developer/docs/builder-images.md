@@ -1,3 +1,21 @@
+---
+title: S2I Builder Image Reference
+category: containers
+sources:
+  - title: Red Hat Container Catalog
+    url: https://catalog.redhat.com/software/containers/search
+    sections: UBI images, S2I builders
+    date_accessed: 2026-02-08
+  - title: OpenShift Source-to-Image (S2I)
+    url: https://docs.openshift.com/container-platform/latest/openshift_images/using_images/using-s21-images.html
+    sections: S2I builder images, Language detection
+    date_accessed: 2026-02-08
+  - title: Red Hat Universal Base Images
+    url: https://developers.redhat.com/products/rhel/ubi
+    sections: UBI9 images, Language runtimes
+    date_accessed: 2026-02-08
+---
+
 # S2I Builder Image Reference
 
 Use this reference when recommending S2I builder images to users.
