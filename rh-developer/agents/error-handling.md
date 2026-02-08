@@ -1,7 +1,7 @@
 ---
 name: error-handling
 description: |
-  Reference guide for common error patterns and recovery strategies in OpenShift S2I deployments. Covers authentication errors (401/403), resource conflicts (409), build failures (git clone, S2I assemble, image push), deployment errors (ImagePullBackOff, CrashLoopBackOff, Pending pods), and route issues. Provides templated responses for each error type with troubleshooting steps and user options. Used by /s2i-build, /deploy, and /containerize-deploy skills.
+  Reference guide for common error patterns and recovery strategies in OpenShift and Kubernetes deployments. Covers authentication errors (401/403), resource conflicts (409), S2I build failures (git clone, assemble, image push), deployment errors (ImagePullBackOff, CrashLoopBackOff, Pending pods), route issues, and Helm deployment errors. Provides templated responses for each error type with troubleshooting steps and user options. Used by /s2i-build, /deploy, /helm-deploy, and /containerize-deploy skills.
 ---
 
 # Error Handling Patterns
