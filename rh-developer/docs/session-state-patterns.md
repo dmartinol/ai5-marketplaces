@@ -1,3 +1,9 @@
+---
+title: Session State Patterns
+category: architecture
+sources: []
+---
+
 # Session State Patterns
 
 This reference defines the state management patterns used across deployment skills.
