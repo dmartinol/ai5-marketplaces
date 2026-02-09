@@ -33,6 +33,8 @@ Deploy applications to standalone RHEL systems using Podman containers or native
 
 ## Critical: Human-in-the-Loop Requirements
 
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
 **IMPORTANT:** This skill requires explicit user confirmation at each phase. You MUST:
 1. **Wait for user confirmation** before executing any actions
 2. **Do NOT proceed** to the next phase until the user explicitly approves

@@ -17,6 +17,8 @@ Before running this skill:
 
 ## Critical: Human-in-the-Loop Requirements
 
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
 **IMPORTANT:** This skill requires explicit user confirmation at each step. You MUST:
 1. **Wait for user confirmation** before executing any actions
 2. **Do NOT proceed** to the next step until the user explicitly approves

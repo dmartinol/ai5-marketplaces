@@ -18,6 +18,8 @@ Provide intelligent, use-case-aware container image recommendations that go beyo
 
 ## Critical: Human-in-the-Loop Requirements
 
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
 **IMPORTANT:** This skill requires user input and confirmation. You MUST:
 1. **Wait for user responses** to all questions before proceeding
 2. **Do NOT assume** user preferences - always ask

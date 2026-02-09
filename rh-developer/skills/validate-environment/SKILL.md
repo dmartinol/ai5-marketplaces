@@ -9,6 +9,15 @@ user_invocable: true
 
 Check that required tools and environment are properly configured.
 
+## Critical: Human-in-the-Loop Requirements
+
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
+**Key Rules:**
+1. WAIT for user to select validation scope before running checks
+2. Present results clearly and ask if user wants to proceed with fixes
+3. Never auto-fix issues without user approval
+
 ## Trigger
 
 - User types `/validate-environment`

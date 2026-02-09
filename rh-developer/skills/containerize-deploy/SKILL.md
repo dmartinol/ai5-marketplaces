@@ -31,6 +31,58 @@ Provide a complete, guided workflow from local source code to running applicatio
 - **Podman** - Build from Containerfile/Dockerfile on OpenShift, then deploy (Phases 3-7)
 - **Helm** - Deploy using Helm chart (Phase 2-H)
 
+## Critical: Human-in-the-Loop Requirements
+
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
+**IMPORTANT:** This skill requires explicit user confirmation at each phase. You MUST:
+
+1. **Wait for user confirmation** before executing any actions
+2. **Do NOT proceed** to the next phase until the user explicitly approves
+3. **Present options clearly** (yes/no/modify) and wait for response
+4. **Never auto-execute** resource creation, builds, or deployments
+5. **Never skip configuration questions** even if user seems to know what they want
+
+If the user says "no" or wants modifications, address their concerns before proceeding.
+
+### Anti-Patterns to Avoid
+
+**CRITICAL - DO NOT DO THIS:**
+
+- If user says "yes do helm deployment to namespace X" - do NOT skip configuration questions
+- If user seems experienced or decisive - do NOT assume they've considered all options
+- If user provides strategy choice early - do NOT skip environment type question
+- If user gives multiple answers at once - still ask each checkpoint question individually
+
+**The user specifying WHAT to deploy does not mean they've decided HOW to configure it.**
+
+Strategy choice ≠ Configuration approval. Always ask:
+1. Environment type (dev/staging/prod)
+2. Resource limits appropriate for environment
+3. Runtime vs build-time configuration
+4. Replicas and scaling
+5. Any customizations before proceeding
+
+## Phase Execution Rules
+
+**MANDATORY:** Execute phases in order. Each phase MUST:
+
+1. Display the phase information to the user
+2. Ask the specific question for that phase
+3. Wait for user response
+4. Only then proceed to next phase
+
+**Even if user provides information for multiple phases at once:**
+- Acknowledge what they said
+- But still display each phase's confirmation prompt
+- Get explicit "yes" for each phase before executing
+
+Example:
+- User: "yes do helm to test-app namespace"
+- AI: "Great, you've chosen Helm strategy and test-app namespace. Let me confirm the configuration details..."
+- [Still show Phase 1.7 Configuration Review]
+- [Still ask environment type, config approach, etc.]
+
 ## Workflow
 
 ### Phase 0: Introduction
@@ -67,7 +119,11 @@ I'll help you containerize and deploy your application to OpenShift or a standal
 **Ready to begin?** (yes/no)
 ```
 
-Wait for user confirmation before proceeding.
+**WAIT for user confirmation before proceeding.** Do NOT continue to Phase 1 until user explicitly confirms.
+
+- If user says "yes" → Proceed to Phase 1
+- If user says "no" → Ask what concerns they have
+- If user gives multiple answers at once (e.g., "yes helm to namespace X") → Acknowledge their choices but still proceed through each phase individually
 
 ### Phase 1: Project Detection
 
@@ -113,6 +169,8 @@ Where would you like to deploy this application?
 
 Store `DEPLOYMENT_TARGET` in session state.
 
+**WAIT for user confirmation before proceeding.** Do NOT assume target based on earlier statements.
+
 **If user selects "RHEL":**
 - Store `DEPLOYMENT_TARGET = "rhel"` in session state
 - Delegate to `/rhel-deploy` skill with detected project info
@@ -151,6 +209,8 @@ Based on my analysis, you have these options:
 
 Store `DEPLOYMENT_STRATEGY` in session state.
 
+**WAIT for user confirmation before proceeding.** Do NOT skip to Phase 1.7 without explicit strategy selection.
+
 ### Phase 1.6: Image Selection (S2I/Podman only)
 
 If user selected S2I or Podman deployment strategy, offer image selection options:
@@ -180,6 +240,60 @@ Which option would you prefer?
 **BRANCHING LOGIC:**
 - If `DEPLOYMENT_STRATEGY` is **"S2I"** or **"Podman"** → After Phase 2, continue to **Phase 3 (S2I/Podman Path)**
 - If `DEPLOYMENT_STRATEGY` is **"Helm"** → After Phase 2, go to **Phase 2-H (Helm Path)**
+
+### Phase 1.7: Configuration Review (MANDATORY)
+
+**This phase MUST NOT be skipped regardless of how the user responded to previous phases.**
+
+```markdown
+## Configuration Review
+
+Before I proceed, let me confirm the deployment configuration:
+
+**Environment Type:**
+| Type | Characteristics |
+|------|-----------------|
+| **Development** | `latest` tags, lower resources, quick iteration |
+| **Staging** | Version tags, moderate resources, testing |
+| **Production** | Pinned versions, higher resources, HA-ready |
+
+**Which environment is this deployment for?**
+1. Development
+2. Staging
+3. Production
+
+---
+
+**Configuration Approach:**
+| Approach | When to Use |
+|----------|-------------|
+| **Runtime config** | Need to change settings without rebuilding (Recommended for prod) |
+| **Build-time config** | Simpler, settings baked into image (OK for dev) |
+
+**How should environment variables be handled?**
+1. Runtime (ConfigMap mount)
+2. Build-time (baked into image)
+
+---
+
+**Resource Settings:**
+| Setting | Dev Default | Prod Default |
+|---------|-------------|--------------|
+| Replicas | 1 | 2+ |
+| CPU limit | 200m | 400m+ |
+| Memory limit | 256Mi | 512Mi+ |
+
+**Use defaults for your environment, or customize?**
+1. Use defaults
+2. Customize resources
+```
+
+**WAIT for user to answer ALL questions above before proceeding.** Do NOT continue to Phase 2 until user has confirmed:
+- Environment type
+- Configuration approach
+- Resource settings
+
+Store: `ENVIRONMENT_TYPE`, `CONFIG_APPROACH`, `RESOURCE_PROFILE` in session state.
 
 ### Phase 2: OpenShift Connection
 

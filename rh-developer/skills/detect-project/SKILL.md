@@ -15,6 +15,8 @@ Analyze the project to detect language/framework and recommend a build strategy.
 
 ## Critical: Human-in-the-Loop Requirements
 
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
 **IMPORTANT:** This skill requires user confirmation before proceeding. You MUST:
 1. **Wait for user confirmation** on detected values before saving to session state
 2. **Do NOT assume** detection is correct - always present findings and ask for confirmation
