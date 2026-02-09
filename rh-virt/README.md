@@ -1,6 +1,456 @@
-# Red Hat Virtualization Agentic Pack
+# Red Hat Openshift Virtualization (Kubevirt) Agentic Pack
 
-Virtualization management and administration tools for Red Hat virtualization platforms. This pack provides automation capabilities for VM lifecycle management, resource allocation, hypervisor configuration, and virtual infrastructure operations.
+OpenShift Virtualization management tools for administering virtual machines on OpenShift clusters. This pack provides automation capabilities for VM lifecycle management, provisioning, and inventory operations using KubeVirt.
 
-**Persona**: Virtualization Administrator
+**Persona**: Virtualization Administrator, OpenShift Administrator
 **Marketplaces**: Claude Code, Cursor
+
+## Overview
+
+The rh-virt collection provides specialized tools for managing virtual machines in OpenShift Virtualization environments:
+
+- **3 specialized skills** for VM administration tasks
+- **OpenShift MCP server integration** for KubeVirt operations
+- **VM lifecycle management** from creation to operational monitoring
+
+## Quick Start
+
+### Prerequisites
+
+- Claude Code CLI or IDE extension
+- OpenShift cluster (>= 4.19) with Virtualization operator installed
+- ServiceAccount with appropriate RBAC permissions for VirtualMachine resources
+- KUBECONFIG environment variable configured with cluster access
+
+### Environment Setup
+
+Configure OpenShift cluster access:
+
+```bash
+export KUBECONFIG="/path/to/your/kubeconfig"
+```
+
+Verify access to the cluster:
+
+```bash
+oc get virtualmachines -A
+# or
+kubectl get vms -A
+```
+
+### Building the MCP Server Container Image
+
+The OpenShift MCP server is not published to public registries, so you need to build it locally before using this plugin.
+
+**Prerequisites**:
+- Git
+- Podman (or Docker)
+
+**Build Steps**:
+
+1. Clone the openshift-mcp-server repository:
+   ```bash
+   git clone https://github.com/openshift/openshift-mcp-server.git
+   cd openshift-mcp-server
+   ```
+
+2. Build the container image using Podman:
+   ```bash
+   podman build -t localhost/openshift-mcp-server:latest -f Dockerfile .
+   ```
+
+   Or using Docker:
+   ```bash
+   docker build -t localhost/openshift-mcp-server:latest -f Dockerfile .
+   ```
+
+3. Verify the image was built successfully:
+   ```bash
+   podman images localhost/openshift-mcp-server:latest
+   podman tag localhost/openshift-mcp-server:latest quay.io/ecosystem-appeng/openshift-mcp-server:latest
+   ```
+
+   Expected output:
+   ```
+   REPOSITORY                                            TAG         IMAGE ID      CREATED        SIZE
+   quay.io/ecosystem-appeng/openshift-mcp-server:latest  latest      <image-id>    <timestamp>    ~192 MB
+   ```
+
+**Note**: The build process takes several minutes as it compiles the Go binary and downloads dependencies. The final image size is approximately 192 MB.
+
+### Installation (Claude Code)
+
+Install the pack as a Claude Code plugin:
+
+```bash
+claude plugin marketplace add https://github.com/RHEcosystemAppEng/agentic-collections
+claude plugin install openshift-virtualization
+```
+
+Or for local development:
+
+```bash
+claude plugin marketplace add /path/to/agentic-collections
+claude plugin install openshift-virtualization
+```
+
+## Skills
+
+The pack provides 3 specialized skills for common virtualization operations:
+
+### 1. **vm-creator** - Virtual Machine Provisioning
+
+Create new virtual machines in OpenShift Virtualization with automatic error diagnosis and workarounds.
+
+**Use when:**
+- "Create a new VM"
+- "Deploy a virtual machine"
+- "Provision a VM with specific configuration"
+
+**MCP Tools Used:**
+- `vm_create` (kubevirt toolset) - Creates VirtualMachine resources with instance type resolution
+
+**What it does:**
+- Creates VirtualMachine resources with intelligent defaults
+- Automatically resolves instance types based on size hints (small, medium, large, xlarge …)
+- Configures storage, networking, and OS workloads
+- **Automatically diagnoses scheduling issues** (e.g., node taints, resource constraints)
+- **Proposes workarounds** for common errors
+- **Applies fixes** with user confirmation (human-in-the-loop)
+- Requires explicit user approval before creating VMs (resource consumption)
+
+### 2. **vm-lifecycle-manager** - VM Power Management
+
+Control VM lifecycle operations including start, stop, and restart.
+
+**Use when:**
+- "Start VM [name]"
+- "Stop the virtual machine [name]"
+- "Restart VM [name]"
+- "Power on/off VM [name]"
+
+**MCP Tools Used:**
+- `vm_lifecycle` (kubevirt toolset) - Manages VM power state transitions
+
+**What it does:**
+- Starts stopped/halted VMs (changes runStrategy to Always)
+- Stops running VMs gracefully (changes runStrategy to Halted)
+- Restarts VMs (stop + start sequence)
+- Manages VM runStrategy transitions safely
+- Requires explicit user confirmation for each operation (prevents accidental service disruption)
+
+### 3. **vm-inventory** - VM Discovery and Status
+
+List and inspect virtual machines across namespaces with comprehensive status information.
+
+**Use when:**
+- "List all VMs"
+- "Show VMs in namespace [name]"
+- "Get details of VM [name]"
+- "What VMs are running?"
+
+**MCP Tools Used:**
+- `resources_list` (core toolset) - Lists VirtualMachine resources across namespaces
+- `resources_get` (core toolset) - Retrieves detailed VM specifications and status
+
+**What it does:**
+- Lists VMs across all namespaces or specific namespace
+- Shows VM status (Running, Stopped, Provisioning, Error) and readiness
+- Provides detailed VM configuration (vCPU, memory, storage, networks)
+- Filters VMs by labels or field selectors
+- Displays resource usage, node placement, and health conditions
+- Read-only operations with fallback to `oc` CLI if MCP tools unavailable
+
+## MCP Server Integration
+
+The pack integrates with the OpenShift MCP server (configured in `.mcp.json`), which provides two toolsets for comprehensive cluster and virtualization management:
+
+### **openshift-virtualization** - OpenShift MCP Server
+
+Provides access to both Kubernetes core operations and KubeVirt virtual machine management through the Model Context Protocol.
+
+**Repository**: https://github.com/openshift/openshift-mcp-server
+
+**Enabled Toolsets**: `core` and `kubevirt` (via `--toolsets core,kubevirt`)
+
+**Available Toolsets**:
+
+The server provides two toolsets enabled via `--toolsets core,kubevirt`:
+
+**KubeVirt Toolset** (`kubevirt`):
+- `vm_create` - Create new VirtualMachines with instance type resolution and OS selection
+- `vm_lifecycle` - Manage VM power state (start/stop/restart)
+
+**Core Toolset** (`core`):
+- `resources_list` - List Kubernetes resources (VMs, Pods, Deployments, etc.)
+- `resources_get` - Get detailed resource information
+- `resources_create_or_update` - Create or update Kubernetes resources
+- `resources_delete` - Delete Kubernetes resources
+- `resources_scale` - Scale deployments and statefulsets
+- `pods_list`, `pods_list_in_namespace` - List pods across namespaces or in specific namespace
+- `pods_get`, `pods_log`, `pods_exec`, `pods_delete`, `pods_run` - Pod operations
+- `pods_top` - Resource consumption metrics for pods
+- `nodes_top`, `nodes_log`, `nodes_stats_summary` - Node operations and metrics
+- `events_list` - List cluster events for debugging
+- `namespaces_list`, `projects_list` - Namespace and project discovery
+
+**Configuration**:
+```json
+{
+  "mcpServers": {
+    "openshift-virtualization": {
+      "command": "podman",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "--network=host",
+        "--userns=keep-id:uid=65532,gid=65532",
+        "-v", "${KUBECONFIG}:/kubeconfig:ro,Z",
+        "--entrypoint", "/app/kubernetes-mcp-server",
+        "quay.io/ecosystem-appeng/openshift-mcp-server:latest",
+        "--kubeconfig", "/kubeconfig",
+        "--toolsets", "core,kubevirt"
+      ],
+      "env": {
+        "KUBECONFIG": "${KUBECONFIG}"
+      },
+      "description": "Red Hat Openshift MCP server for interacting with Openshift Container Platform clusters and its operators",
+      "security": {
+        "isolation": "container",
+        "network": "local",
+        "credentials": "env-only"
+      }
+    }
+  }
+}
+```
+
+**Configuration Details**:
+- `--userns=keep-id:uid=65532,gid=65532` - Maps container user namespace for rootless Podman security
+- `,Z` flag on volume mount - Applies SELinux context label for container access to kubeconfig
+- `--entrypoint /app/kubernetes-mcp-server` - Specifies the MCP server binary to execute
+- `--kubeconfig /kubeconfig` - Path to kubeconfig inside the container
+- `--toolsets core,kubevirt` - Enables both core Kubernetes and KubeVirt-specific tool collections
+- `--network=host` - Required for accessing local/remote Kubernetes clusters
+
+## Sample Workflows
+
+### Workflow 1: Create and Start VM
+
+```
+User: "Create a VM called web-server in namespace production"
+→ vm-creator skill creates the VM
+
+User: "Start the web-server VM"
+→ vm-lifecycle-manager skill starts the VM
+
+User: "Check if it's running"
+→ vm-inventory skill shows VM status
+```
+
+### Workflow 2: VM Inventory Check
+
+```
+User: "Show all VMs in production namespace"
+→ vm-inventory skill lists all VMs with status
+
+User: "What's the status of database-vm?"
+→ vm-inventory skill shows detailed VM information
+```
+
+### Workflow 3: VM Lifecycle Management
+
+```
+User: "Stop all VMs in development namespace"
+→ vm-lifecycle-manager skill stops each VM
+
+User: "Restart the api-server VM"
+→ vm-lifecycle-manager skill restarts the VM
+```
+
+### Workflow 4: Automatic Error Diagnosis and Remediation
+
+```
+User: "Create a Fedora VM called test-vm in namespace demo"
+→ vm-creator skill creates the VM
+→ Detects ErrorUnschedulable status
+→ Consults troubleshooting.md documentation
+→ Diagnoses: Node taints prevent scheduling
+→ Proposes workaround: Add tolerations to VM spec
+
+Agent: "⚠️ VM Scheduling Issue Detected
+        Root Cause: Node taints prevent VM scheduling
+
+        I can apply a workaround to add the required tolerations.
+        How would you like to proceed?"
+
+User: "apply workaround"
+→ vm-creator patches VM with tolerations
+→ Verifies VM can now be scheduled
+→ Reports success
+
+Agent: "✓ Workaround Applied Successfully
+        VM can now be scheduled on virtualization nodes"
+```
+
+**Key Features**:
+- **Automatic diagnosis**: Detects ErrorUnschedulable and other common errors
+- **Documentation consultation**: Reads troubleshooting.md for domain knowledge
+- **Intelligent workarounds**: Proposes fixes for MCP tool limitations
+- **Human-in-the-loop**: Requires explicit user confirmation before applying patches
+- **Transparent**: Explains temporary limitations and suggests filing enhancement requests
+
+## Configuration
+
+MCP server is configured in `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "openshift-virtualization": {
+      "command": "podman",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "--network=host",
+        "--userns=keep-id:uid=65532,gid=65532",
+        "-v", "${KUBECONFIG}:/kubeconfig:ro,Z",
+        "--entrypoint", "/app/kubernetes-mcp-server",
+        "quay.io/ecosystem-appeng/openshift-mcp-server:latest",
+        "--kubeconfig", "/kubeconfig",
+        "--toolsets", "core,kubevirt"
+      ],
+      "env": {
+        "KUBECONFIG": "${KUBECONFIG}"
+      },
+      "description": "Red Hat Openshift MCP server for interacting with Openshift Container Platform clusters and its operators",
+      "security": {
+        "isolation": "container",
+        "network": "local",
+        "credentials": "env-only"
+      }
+    }
+  }
+}
+```
+
+**Key Configuration Notes**:
+- Uses Podman to run locally-built container image `quay.io/ecosystem-appeng/openshift-mcp-server:latest`
+- `--userns=keep-id:uid=65532,gid=65532` - Enables rootless container security with user namespace mapping
+- Mounts `KUBECONFIG` as read-only volume inside container with `,Z` for SELinux labeling
+- `--entrypoint /app/kubernetes-mcp-server` - Specifies the MCP server binary
+- `--toolsets core,kubevirt` - Enables both core Kubernetes and KubeVirt-specific tools
+- Uses `--network=host` for cluster access (required for local/remote clusters)
+- Requires OpenShift Virtualization operator installed on the cluster
+- ServiceAccount needs RBAC permissions for VirtualMachine resources
+
+## Troubleshooting
+
+### Automatic Diagnosis (Recommended)
+
+The **vm-creator** skill includes automatic error diagnosis and workaround proposals. When VMs encounter scheduling issues:
+
+1. **Detection**: Skill automatically detects ErrorUnschedulable and other error states
+2. **Diagnosis**: Consults `docs/troubleshooting.md` to understand root cause
+3. **Investigation**: Executes diagnostic commands (node taints, resource availability, events)
+4. **Proposal**: Presents clear diagnosis with workaround options
+5. **Remediation**: Applies fix with user confirmation (human-in-the-loop)
+
+**Common Issues Handled**:
+- **ErrorUnschedulable** - Node taints/tolerations mismatch, resource constraints, node selector issues
+- **ErrorDataVolumeNotReady** - Storage provisioning delays, storage class issues, quota exceeded
+
+**For comprehensive troubleshooting guidance**, see [docs/troubleshooting.md](docs/troubleshooting.md).
+
+### MCP Server Won't Start
+
+**Problem**: Server fails to connect to cluster
+
+**Solutions**:
+1. Verify KUBECONFIG is set: `echo $KUBECONFIG`
+2. Test cluster access: `oc get nodes` or `kubectl get nodes`
+3. Check ServiceAccount permissions: `oc auth can-i create virtualmachines -A`
+
+### VM Operations Fail
+
+**Problem**: VM creation or lifecycle operations return errors
+
+**Solutions**:
+1. Verify OpenShift Virtualization operator is installed
+2. Check namespace exists and ServiceAccount has access
+3. Verify RBAC permissions for VirtualMachine resources
+4. Check cluster resource availability (CPU, memory, storage)
+5. Let vm-creator skill run automatic diagnosis (see Workflow 4 above)
+
+### Skills Not Triggering
+
+**Problem**: Skills don't activate on expected queries
+
+**Solutions**:
+1. Verify plugin installed: `claude plugin list`
+2. Reload Claude Code to refresh plugins
+3. Check skill descriptions match query intent
+4. Use explicit phrasing from skill examples
+
+## Architecture Reference
+
+### Directory Structure
+
+```
+rh-virt/
+├── README.md                    # This file
+├── .claude-plugin/
+│   └── plugin.json              # Plugin metadata
+├── .mcp.json                    # MCP server configuration
+├── docs/                        # AI-optimized knowledge base
+│   └── troubleshooting.md       # VM error diagnosis and workarounds
+└── skills/
+    ├── vm-creator/SKILL.md      # VM provisioning with auto-diagnosis
+    ├── vm-lifecycle-manager/SKILL.md  # VM power management
+    └── vm-inventory/SKILL.md    # VM discovery and status
+```
+
+### Key Patterns
+
+- **Skills encapsulate operations** - Each skill handles one category of VM tasks
+- **MCP provides tools** - OpenShift MCP server exposes KubeVirt operations
+- **Environment-based auth** - KUBECONFIG for secure cluster access
+- **Automatic diagnosis** - Skills detect errors, consult docs, propose workarounds
+- **Document consultation** - Skills read troubleshooting.md for domain knowledge
+- **Human-in-the-loop** - User approval required before applying fixes
+- **Workaround transparency** - Clear communication of MCP tool limitations and temporary solutions
+
+## Security Model
+
+**Cluster access**:
+- Uses KUBECONFIG for authentication
+- Respects Kubernetes RBAC permissions
+- ServiceAccount-based authorization
+- No credential storage or caching
+
+**VM operations**:
+- Namespace isolation enforced
+- Resource quotas respected
+- All operations audited in Kubernetes API logs
+
+## Development
+
+See main repository [README.md](../README.md) for:
+- Adding new skills
+- Creating agents
+- Integrating MCP servers
+- Testing and validation
+
+## License
+
+[Apache 2.0](../LICENSE)
+
+## References
+
+- [OpenShift Virtualization Documentation](https://docs.openshift.com/container-platform/latest/virt/about_virt/about-virt.html)
+- [KubeVirt User Guide](https://kubevirt.io/user-guide/)
+- [OpenShift MCP Server](https://github.com/openshift/openshift-mcp-server)
+- [MCP Protocol Specification](https://modelcontextprotocol.io/)
+- [Main Repository](https://github.com/RHEcosystemAppEng/agentic-collections)
