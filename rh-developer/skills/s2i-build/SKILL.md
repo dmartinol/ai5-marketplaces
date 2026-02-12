@@ -17,6 +17,8 @@ Before running this skill, ensure:
 
 ## Critical: Human-in-the-Loop Requirements
 
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
 **IMPORTANT:** This skill requires explicit user confirmation at each step. You MUST:
 1. **Wait for user confirmation** before executing any actions
 2. **Do NOT proceed** to the next step until the user explicitly approves
@@ -412,3 +414,10 @@ On success, these values are available for `/deploy`:
 | `IMAGE_REF` | `image-registry.openshift-image-registry.svc:5000/[ns]/[app]:latest` |
 | `IMAGESTREAM_TAG` | `[app]:latest` |
 | `BUILD_NAME` | `[app]-1` |
+
+## Reference Documentation
+
+For detailed guidance, see:
+- [docs/builder-images.md](../docs/builder-images.md) - S2I builder image selection, version mapping
+- [docs/python-s2i-entrypoints.md](../docs/python-s2i-entrypoints.md) - Python APP_MODULE configuration, entry point troubleshooting
+- [docs/prerequisites.md](../docs/prerequisites.md) - Required tools (oc)

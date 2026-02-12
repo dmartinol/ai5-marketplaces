@@ -15,6 +15,8 @@ Analyze the project to detect language/framework and recommend a build strategy.
 
 ## Critical: Human-in-the-Loop Requirements
 
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
 **IMPORTANT:** This skill requires user confirmation before proceeding. You MUST:
 1. **Wait for user confirmation** on detected values before saving to session state
 2. **Do NOT assume** detection is correct - always present findings and ask for confirmation
@@ -297,3 +299,10 @@ Returns: Actual file content as text
 
 ### Terminal (fallback)
 - `run_terminal_cmd` - Only if user selects "Clone & Inspect" for private repos
+
+## Reference Documentation
+
+For detailed guidance, see:
+- [docs/builder-images.md](../docs/builder-images.md) - Language detection matrix, version-to-image mapping, S2I builder selection
+- [docs/python-s2i-entrypoints.md](../docs/python-s2i-entrypoints.md) - Python entry point detection, APP_MODULE configuration
+- [docs/prerequisites.md](../docs/prerequisites.md) - Required tools (git)

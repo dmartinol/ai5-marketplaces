@@ -33,6 +33,8 @@ Deploy applications to standalone RHEL systems using Podman containers or native
 
 ## Critical: Human-in-the-Loop Requirements
 
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
 **IMPORTANT:** This skill requires explicit user confirmation at each phase. You MUST:
 1. **Wait for user confirmation** before executing any actions
 2. **Do NOT proceed** to the next phase until the user explicitly approves
@@ -267,9 +269,7 @@ ssh [target] "podman pull [image-reference]"
 | Environment | [list env vars] |
 | Run Mode | [rootless / rootful] |
 
-**SELinux Volume Labels:**
-- Use `:z` for shared volumes (multiple containers)
-- Use `:Z` for private volumes (single container)
+**SELinux Volume Labels:** Use `:z` for shared volumes, `:Z` for private volumes. See [docs/rhel-deployment.md](../docs/rhel-deployment.md) for SELinux configuration details.
 
 Proceed with this configuration? (yes/modify/cancel)
 ```
@@ -287,29 +287,45 @@ Proceed with this configuration? (yes/modify/cancel)
 
 Creating systemd unit for Podman container.
 
-**Locations:**
-- Rootless: `~/.config/systemd/user/[app-name].service`
+**Template to use:**
+- Rootful: `templates/systemd/systemd-container-rootful.service`
+- Rootless: `templates/systemd/systemd-container-rootless.service`
+
+**Variables to substitute:**
+| Variable | Value |
+|----------|-------|
+| `${APP_NAME}` | [app-name] |
+| `${PORT}` | [container-port] |
+| `${IMAGE}` | [container-image] |
+
+**Target locations:**
 - Rootful: `/etc/systemd/system/[app-name].service`
+- Rootless: `~/.config/systemd/user/[app-name].service`
 
 Proceed with creating this service? (yes/no)
 ```
 
 **WAIT for user confirmation.** Do NOT create the systemd unit until user explicitly says "yes".
 
-- If user says "yes" → Create the service unit file using the template
+- If user says "yes" → Read the appropriate template, substitute variables, and create the service
 - If user says "no" → Ask what they would like to change
 
-**Commands to execute:**
+**Steps to execute:**
+
+1. Read the appropriate template from `templates/systemd/`
+2. Substitute `${APP_NAME}`, `${PORT}`, `${IMAGE}` with session state values
+3. Transfer the generated unit file to the target host
+4. Enable and start the service
 
 ```bash
 # For rootful:
-ssh [target] "sudo tee /etc/systemd/system/[app-name].service" < [unit-file]
+ssh [target] "sudo tee /etc/systemd/system/[app-name].service" < [generated-unit-file]
 ssh [target] "sudo systemctl daemon-reload"
 ssh [target] "sudo systemctl enable --now [app-name]"
 
 # For rootless:
 ssh [target] "mkdir -p ~/.config/systemd/user"
-ssh [target] "tee ~/.config/systemd/user/[app-name].service" < [unit-file]
+ssh [target] "tee ~/.config/systemd/user/[app-name].service" < [generated-unit-file]
 ssh [target] "systemctl --user daemon-reload"
 ssh [target] "systemctl --user enable --now [app-name]"
 ssh [target] "loginctl enable-linger [user]"  # Keep user services running
@@ -353,15 +369,7 @@ Proceed with firewall configuration? (yes/skip)
 
 **Runtime packages for [language]:**
 
-| Language | RHEL 8 | RHEL 9 |
-|----------|--------|--------|
-| Node.js 18 | `dnf module enable nodejs:18 && dnf install nodejs` | `dnf install nodejs` |
-| Node.js 20 | `dnf module enable nodejs:20 && dnf install nodejs` | `dnf module enable nodejs:20 && dnf install nodejs` |
-| Python 3.9 | `dnf install python39 python39-pip` | `dnf install python3 python3-pip` |
-| Python 3.11 | N/A | `dnf install python3.11 python3.11-pip` |
-| Java 17 | `dnf install java-17-openjdk` | `dnf install java-17-openjdk` |
-| Java 21 | N/A | `dnf install java-21-openjdk` |
-| Go | `dnf install go-toolset` | `dnf install golang` |
+See [docs/rhel-deployment.md](../docs/rhel-deployment.md) for the complete runtime package mapping by language and RHEL version (Node.js, Python, Java, Go, Ruby, PHP).
 
 **Commands to execute:**
 ```bash
@@ -417,20 +425,34 @@ Proceed with deployment? (yes/no)
 ```markdown
 ## Systemd Service Configuration
 
-**Location:** `/etc/systemd/system/[app-name].service`
+**Template to use:** `templates/systemd/systemd-native.service`
 
-**Start commands by language:**
-| Language | ExecStart Example |
-|----------|-------------------|
-| Node.js | `/usr/bin/node /opt/[app-name]/server.js` |
-| Python | `/usr/bin/python3 /opt/[app-name]/app.py` |
-| Java | `/usr/bin/java -jar /opt/[app-name]/app.jar` |
-| Go | `/opt/[app-name]/[binary-name]` |
+**Variables to substitute:**
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `${APP_NAME}` | [app-name] | Application name |
+| `${SERVICE_USER}` | [service-user] | User to run the service as |
+| `${APP_PATH}` | /opt/[app-name] | Application install path |
+| `${PORT}` | [container-port] | Application listen port |
+| `${START_COMMAND}` | [see below] | Language-specific start command |
+
+**Start commands by language:** See [docs/rhel-deployment.md](../docs/rhel-deployment.md) for language-specific systemd unit templates (Node.js, Python, Java, Go).
+
+**Target location:** `/etc/systemd/system/[app-name].service`
+
+**Note:** The template includes security hardening (NoNewPrivileges, ProtectSystem, ProtectHome, PrivateTmp).
 
 Proceed with creating this service? (yes/no)
 ```
 
 **WAIT for user confirmation.** Do NOT create the systemd unit until user explicitly says "yes".
+
+**Steps to execute:**
+
+1. Read the template from `templates/systemd/systemd-native.service`
+2. Substitute all variables with session state values
+3. Transfer the generated unit file to the target host
+4. Enable and start the service
 
 ### Phase 4b-4: Firewall Configuration
 
@@ -516,3 +538,9 @@ When delegating to `/recommend-image`:
 1. Provide detected `LANGUAGE`, `FRAMEWORK`, and `VERSION` from project analysis
 2. Receive back: `BUILDER_IMAGE`, `IMAGE_VARIANT`, `SELECTION_RATIONALE`
 3. Use `BUILDER_IMAGE` as the FROM image in generated Containerfile
+
+## Reference Documentation
+
+For detailed guidance, see:
+- [docs/rhel-deployment.md](../docs/rhel-deployment.md) - Comprehensive RHEL deployment reference: systemd unit templates, SELinux configuration, firewall commands, runtime package mapping
+- [docs/prerequisites.md](../docs/prerequisites.md) - Required tools (ssh, podman)

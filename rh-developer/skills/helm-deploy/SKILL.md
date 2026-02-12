@@ -16,6 +16,8 @@ Deploy applications to OpenShift using Helm charts. Supports existing charts or 
 
 ## Critical: Human-in-the-Loop Requirements
 
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
 **IMPORTANT:** This skill requires explicit user confirmation at each step. You MUST:
 1. **Wait for user confirmation** before executing any actions
 2. **Do NOT proceed** to the next step until the user explicitly approves
@@ -46,15 +48,10 @@ If user says "no", wait for them to switch context and tell you to continue.
 
 ### Step 2: Detect Helm Chart
 
-Search for Helm charts in this order:
+Search for Helm charts using the same priority order as `/detect-project`:
+- `./Chart.yaml`, `./chart/Chart.yaml`, `./charts/*/Chart.yaml`, `./helm/Chart.yaml`, `./deploy/helm/Chart.yaml`
 
-| Priority | Path | Description |
-|----------|------|-------------|
-| 1 | `./Chart.yaml` | Root directory |
-| 2 | `./chart/Chart.yaml` | Chart subdirectory |
-| 3 | `./charts/*/Chart.yaml` | Charts directory |
-| 4 | `./helm/Chart.yaml` | Helm subdirectory |
-| 5 | `./deploy/helm/Chart.yaml` | Deploy directory |
+> **Note:** If `/detect-project` was already run, use the `HELM_CHART_PATH` and `HELM_CHART_DETECTED` values from session state.
 
 **If chart found:**
 
@@ -373,3 +370,10 @@ Your application is live!
 | `CHART_VERSION` | Chart version | `0.1.0` |
 | `RELEASE_REVISION` | Current revision | `1` |
 | `ROUTE_HOST` | External URL | `my-app-ns.apps.cluster.com` |
+
+## Reference Documentation
+
+For detailed guidance, see:
+- [docs/builder-images.md](../docs/builder-images.md) - Container image references for chart values
+- [docs/image-selection-criteria.md](../docs/image-selection-criteria.md) - Image variant selection for production deployments
+- [docs/prerequisites.md](../docs/prerequisites.md) - Required tools (oc, helm)

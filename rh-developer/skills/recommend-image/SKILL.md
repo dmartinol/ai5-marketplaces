@@ -18,6 +18,8 @@ Provide intelligent, use-case-aware container image recommendations that go beyo
 
 ## Critical: Human-in-the-Loop Requirements
 
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
 **IMPORTANT:** This skill requires user input and confirmation. You MUST:
 1. **Wait for user responses** to all questions before proceeding
 2. **Do NOT assume** user preferences - always ask
@@ -108,25 +110,13 @@ Please describe your use case or select from the options above.
 
 ### Step 3: Evaluate Image Options
 
-For each language, evaluate available variants:
+For each language, evaluate available variants against user requirements.
 
-**Image Variant Types:**
+**Image Variants:** Full (build tools), Minimal (smaller, secure), Runtime (smallest, pre-compiled only)
 
-| Variant | Description | Best For |
-|---------|-------------|----------|
-| Full | Includes build tools, dev utilities | Development, native extensions |
-| Minimal | Smaller base, essential packages only | Production, security-focused |
-| Runtime | No build tools, runtime only | Pre-compiled apps, smallest size |
+**Key Scoring Factors:** Image size, security posture, build tools availability, startup time, LTS status
 
-**Scoring Criteria:**
-
-| Criteria | Weight (Production) | Weight (Development) |
-|----------|---------------------|----------------------|
-| Image Size | High | Low |
-| Security (fewer packages) | High | Medium |
-| Build Tools | Low | High |
-| Startup Time | Medium | Low |
-| LTS Status | High | Medium |
+> **See [docs/image-selection-criteria.md](../docs/image-selection-criteria.md)** for comprehensive scoring matrices with weighted criteria by environment (production/development/edge/serverless).
 
 ### Step 3.5: Dynamic Image Validation
 
@@ -153,13 +143,7 @@ To provide accurate image recommendations, I need `skopeo` to inspect container 
 - Check architecture support (amd64, arm64)
 - Show when the image was last built
 
-**Install skopeo:**
-
-| OS | Command |
-|----|---------|
-| Fedora/RHEL/CentOS | `sudo dnf install skopeo` |
-| Ubuntu/Debian | `sudo apt install skopeo` |
-| macOS (Homebrew) | `brew install skopeo` |
+**Install skopeo:** See [docs/prerequisites.md](../docs/prerequisites.md) for installation commands by OS.
 
 After installing, run `/recommend-image` again for enhanced recommendations.
 
@@ -277,19 +261,12 @@ Return to Step 2 with new inputs.
 
 ## Image Reference
 
-### Quick Use-Case Matrix
+**Quick variant selection:**
+- **Production** → Minimal or Runtime variant
+- **Development** → Full variant
+- **Serverless** → Smallest available (minimal or native binary)
 
-| Use Case | Variant | Pattern |
-|----------|---------|---------|
-| Production | Minimal/Runtime | `ubi9/{lang}-{ver}-minimal` or `-runtime` |
-| Development | Full | `ubi9/{lang}-{ver}` |
-| Serverless | Smallest | Minimal variants or native builds |
-
-**Framework-Specific (common):**
-- **Quarkus**: `openjdk-21` (JVM) or Mandrel builder (native)
-- **Spring Boot**: `openjdk-17-runtime` for production
-- **Next.js/React**: `nodejs-20` with multi-stage build
-- **Django/Flask**: `python-311` with `requirements.txt`
+> **See [docs/image-selection-criteria.md](../docs/image-selection-criteria.md)** for comprehensive image size references, LTS timelines, decision trees, and framework-specific recommendations (Quarkus, Spring Boot, Next.js, Django/Flask).
 
 ## Output Variables
 
@@ -301,3 +278,11 @@ After successful recommendation:
 | `IMAGE_VARIANT` | Variant type | `minimal` |
 | `SELECTION_RATIONALE` | Why this image | "Minimal variant for production security" |
 | `ALTERNATIVES` | Fallback options | `["ubi9/nodejs-20", "ubi9/nodejs-22-minimal"]` |
+
+## Reference Documentation
+
+For detailed guidance, see:
+- [docs/image-selection-criteria.md](../docs/image-selection-criteria.md) - Comprehensive scoring matrices, image size reference, LTS timelines, decision trees
+- [docs/builder-images.md](../docs/builder-images.md) - UBI image registry, framework-specific recommendations, variant availability
+- [docs/dynamic-validation.md](../docs/dynamic-validation.md) - Skopeo commands, Red Hat Security Data API, image verification patterns
+- [docs/prerequisites.md](../docs/prerequisites.md) - Skopeo installation instructions

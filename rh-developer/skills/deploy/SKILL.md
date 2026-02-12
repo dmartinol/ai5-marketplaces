@@ -17,6 +17,8 @@ Before running this skill:
 
 ## Critical: Human-in-the-Loop Requirements
 
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
 **IMPORTANT:** This skill requires explicit user confirmation at each step. You MUST:
 1. **Wait for user confirmation** before executing any actions
 2. **Do NOT proceed** to the next step until the user explicitly approves
@@ -331,3 +333,8 @@ Your application is now live!
 | Replicas | Yes (default: 1) | Optional |
 | Create Route | Yes (default: yes) | Yes |
 | Namespace | Yes (from kubeconfig) | Yes |
+
+## Reference Documentation
+
+For detailed guidance, see:
+- [docs/prerequisites.md](../docs/prerequisites.md) - Required tools (oc), cluster access verification

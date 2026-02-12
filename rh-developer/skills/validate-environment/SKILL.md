@@ -9,6 +9,15 @@ user_invocable: true
 
 Check that required tools and environment are properly configured.
 
+## Critical: Human-in-the-Loop Requirements
+
+See [Human-in-the-Loop Requirements](../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
+
+**Key Rules:**
+1. WAIT for user to select validation scope before running checks
+2. Present results clearly and ask if user wants to proceed with fixes
+3. Never auto-fix issues without user approval
+
 ## Trigger
 
 - User types `/validate-environment`
@@ -54,19 +63,9 @@ check_tool() {
 }
 ```
 
-**Tools to check:**
+**Tools to check:** git, curl, jq, oc, helm, podman, docker, skopeo, ssh
 
-| Tool | Check Command | Required For |
-|------|---------------|--------------|
-| `git` | `git --version` | Repository cloning |
-| `curl` | `curl --version` | API calls |
-| `jq` | `jq --version` | JSON parsing |
-| `oc` | `oc version --client` | OpenShift operations |
-| `helm` | `helm version --short` | Helm deployments |
-| `podman` | `podman --version` | Container builds |
-| `docker` | `docker --version` | Container builds (alt) |
-| `skopeo` | `skopeo --version` | Image inspection |
-| `ssh` | `ssh -V` | RHEL deployments |
+> **See [docs/prerequisites.md](../docs/prerequisites.md)** for the complete tool requirements by skill, check commands, and installation instructions.
 
 ### Step 3: Check OpenShift Connectivity (if TARGET includes openshift)
 
@@ -186,10 +185,7 @@ Select an option or describe what you'd like to do:
 
 This tool is required for [skill-names].
 
-Install with:
-- Fedora/RHEL: `sudo dnf install [package]`
-- Ubuntu/Debian: `sudo apt install [package]`
-- macOS: `brew install [package]`
+See [docs/prerequisites.md](../docs/prerequisites.md) for installation commands by OS.
 ```
 
 ### Cluster Connection Failed
@@ -232,3 +228,8 @@ Options:
 | `TOOLS_MISSING` | List of missing tools | `skopeo` |
 | `CLUSTER_CONNECTED` | OpenShift connectivity | `true` / `false` |
 | `READY_FOR_SKILLS` | Skills that can run | `/deploy,/s2i-build` |
+
+## Reference Documentation
+
+For detailed guidance, see:
+- [docs/prerequisites.md](../docs/prerequisites.md) - Comprehensive tool requirements by skill, installation commands, cluster access verification
